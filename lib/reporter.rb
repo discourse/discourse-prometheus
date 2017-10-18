@@ -16,21 +16,14 @@ class DiscoursePrometheus::Reporter
   end
 
   def report(env, data)
-    ad_params = env['action_dispatch.request.parameters']
-    controller, action = nil
-
-    if ad_params
-      controller = ad_params['controller']
-      action = ad_params['action']
-    end
-
-    path = env["REQUEST_PATH"]
-    log_prom_later(path, controller, action, data)
+    # CAREFUL, we don't want to hoist env into Scheduler::Defer
+    # hence the extra method call
+    log_prom_later(DiscoursePrometheus::Metric.from_env_data(env, data))
   end
 
-  def log_prom_later(path, controller, action, data)
+  def log_prom_later(message)
     Scheduler::Defer.later("Prom stats", _db = nil) do
-      $writer.puts("#{path} #{controller} #{action} #{data}")
+      @writer.puts(message.to_s)
     end
   end
 end

@@ -19,6 +19,7 @@ class ::DiscoursePrometheus::Metric
     crawler
     mobile
     tracked
+    json
   }
 
   STRING_ATTRS = %w{
@@ -96,6 +97,10 @@ class ::DiscoursePrometheus::Metric
     metric.mobile = !!data[:is_mobile]
     metric.tracked = !!data[:track_view]
 
+    metric.json = env["PATH_INFO"].to_s.ends_with?(".json") ||
+      env["HTTP_ACCEPT"].to_s.include?("application/json")
+
+    metric.ajax = env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     metric
   end
 end

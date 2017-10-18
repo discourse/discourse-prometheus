@@ -64,6 +64,36 @@ describe DiscoursePrometheus::Metric do
       expect(metric.tracked).to eq(true)
     end
 
+    it "Can figure out if it is an ajax call" do
+      env = {
+        "HTTP_X_REQUESTED_WITH" => "XMLHttpRequest"
+      }
+
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+
+      expect(metric.ajax).to eq(true)
+    end
+
+    it "Can detect json requests" do
+      env = {
+        "PATH_INFO" => "/test.json"
+      }
+
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+
+      expect(metric.json).to eq(true)
+    end
+
+    it "Can detect json requests from header" do
+      env = {
+        "HTTP_ACCEPT" => "application/json, text/javascript, */*; q=0.01"
+      }
+
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+
+      expect(metric.json).to eq(true)
+    end
+
     it "Can fish out timings if available" do
       data = {
         timing: {

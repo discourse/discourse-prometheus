@@ -7,13 +7,16 @@ module ::DiscoursePrometheus; end
 
 after_initialize do
 
+  require_relative("lib/big_pipe")
+  require_relative("lib/prometheus_metric")
+  require_relative("lib/counter")
+  require_relative("lib/gauge")
   require_relative("lib/metric")
   require_relative("lib/reporter")
-  require_relative("lib/collector")
+  require_relative("lib/processor")
 
-  prom_reader, prom_writer = IO.pipe
-
-  DiscoursePrometheus::Reporter.start(prom_writer)
+  # TODO we want this configurable (discourse_) may be a better prefix
+  DiscoursePrometheus::PrometheusMetric.default_prefix = 'web_'
 
   module ::DiscoursePrometheus
     class Engine < ::Rails::Engine
@@ -22,7 +25,7 @@ after_initialize do
     end
   end
 
-  load File.expand_path("../app/controllers/metrics_controller.rb", __FILE__)
+  require_relative("app/controllers/metrics_controller")
 
   ::DiscoursePrometheus::Engine.routes.draw do
     get "/" => "metrics#index"
@@ -32,17 +35,21 @@ after_initialize do
     mount ::DiscoursePrometheus::Engine, at: '/metrics'
   end
 
-  require_dependency 'demon/sidekiq'
-  class ::Demon::Sidekiq
+  # TODO we may want to shrink the max here
+  $prometheus_pipe = DiscoursePrometheus::BigPipe.new(50_000)
+  DiscoursePrometheus::Reporter.start($prometheus_pipe)
 
-    module Tracker
-
-      def after_fork
-        ::DiscoursePrometheus::Collector.start(prom_reader, *IO.pipe)
-        super
-      end
-    end
-
-    prepend Tracker
-  end
+  # TODO decide if we want to host this in sidekiq and not unicorn master
+  # require_dependency 'demon/sidekiq'
+  # class ::Demon::Sidekiq
+  #
+  #   module Tracker
+  #     def after_fork
+  #       ::DiscoursePrometheus::Collector.start($prom_reader, *IO.pipe)
+  #       super
+  #     end
+  #   end
+  #
+  #   prepend Tracker
+  # end
 end

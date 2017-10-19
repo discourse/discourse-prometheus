@@ -38,7 +38,7 @@ describe DiscoursePrometheus::Metric do
         "action_dispatch.request.parameters" => { "controller" => 'con', "action" => 'act' }
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {}, "")
 
       expect(metric.controller).to eq('con')
       expect(metric.action).to eq('act')
@@ -54,7 +54,7 @@ describe DiscoursePrometheus::Metric do
         track_view: true
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data({}, data)
+      metric = DiscoursePrometheus::Metric.from_env_data({}, data, "test")
 
       expect(metric.status_code).to eq(201)
       expect(metric.crawler).to eq(false)
@@ -62,6 +62,7 @@ describe DiscoursePrometheus::Metric do
       expect(metric.background).to eq(false)
       expect(metric.mobile).to eq(true)
       expect(metric.tracked).to eq(true)
+      expect(metric.host).to eq("test")
     end
 
     it "Can figure out if it is an ajax call" do
@@ -69,7 +70,7 @@ describe DiscoursePrometheus::Metric do
         "HTTP_X_REQUESTED_WITH" => "XMLHttpRequest"
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {}, "")
 
       expect(metric.ajax).to eq(true)
     end
@@ -79,7 +80,7 @@ describe DiscoursePrometheus::Metric do
         "PATH_INFO" => "/test.json"
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {}, "")
 
       expect(metric.json).to eq(true)
     end
@@ -89,7 +90,7 @@ describe DiscoursePrometheus::Metric do
         "HTTP_ACCEPT" => "application/json, text/javascript, */*; q=0.01"
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data(env, {})
+      metric = DiscoursePrometheus::Metric.from_env_data(env, {}, "")
 
       expect(metric.json).to eq(true)
     end
@@ -103,7 +104,7 @@ describe DiscoursePrometheus::Metric do
         }
       }
 
-      metric = DiscoursePrometheus::Metric.from_env_data({}, data)
+      metric = DiscoursePrometheus::Metric.from_env_data({}, data, "")
 
       expect(metric.duration).to eq(0.1)
       expect(metric.sql_duration).to eq(0.2)

@@ -25,6 +25,7 @@ class ::DiscoursePrometheus::Metric
   STRING_ATTRS = %w{
     controller
     action
+    host
   }
 
   (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each do |attr|
@@ -44,6 +45,14 @@ class ::DiscoursePrometheus::Metric
       #{STRING_ATTRS.map { |f| "str << #{f}.to_s" }.join("\nstr << \" \"\n")}
     end
   RUBY
+
+  def self.get(hash)
+    metric = new
+    hash.each do |k, v|
+      metric.send "#{k}=", v
+    end
+    metric
+  end
 
   def self.parse(str)
     result = self.new
@@ -74,7 +83,7 @@ class ::DiscoursePrometheus::Metric
     result
   end
 
-  def self.from_env_data(env, data)
+  def self.from_env_data(env, data, host)
     metric = self.new
 
     if ad_params = env['action_dispatch.request.parameters']
@@ -96,6 +105,7 @@ class ::DiscoursePrometheus::Metric
     metric.background = !!data[:is_background]
     metric.mobile = !!data[:is_mobile]
     metric.tracked = !!data[:track_view]
+    metric.host = host
 
     metric.json = env["PATH_INFO"].to_s.ends_with?(".json") ||
       env["HTTP_ACCEPT"].to_s.include?("application/json")

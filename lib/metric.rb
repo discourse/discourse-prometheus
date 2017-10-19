@@ -86,6 +86,8 @@ class ::DiscoursePrometheus::Metric
   def self.from_env_data(env, data, host)
     metric = self.new
 
+    data ||= {}
+
     if ad_params = env['action_dispatch.request.parameters']
       metric.controller = ad_params['controller']
       metric.action = ad_params['action']
@@ -93,10 +95,16 @@ class ::DiscoursePrometheus::Metric
 
     if timing = data[:timing]
       metric.duration = timing[:duration]
-      metric.sql_duration = timing[:sql][:duration]
-      metric.redis_duration = timing[:redis][:duration]
-      metric.sql_calls = timing[:sql][:calls]
-      metric.redis_calls = timing[:redis][:calls]
+
+      if sql = timing[:sql]
+        metric.sql_duration = sql[:duration]
+        metric.sql_calls = sql[:calls]
+      end
+
+      if redis = timing[:redis]
+        metric.redis_duration = redis[:duration]
+        metric.redis_calls = redis[:calls]
+      end
     end
 
     metric.status_code = data[:status].to_i

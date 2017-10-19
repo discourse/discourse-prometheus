@@ -22,8 +22,6 @@ class DiscoursePrometheus::BigPipe
         consumer_run_loop
       rescue => e
         Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
-        p e
-        p e.backtrace
       end
     end
   end

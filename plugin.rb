@@ -15,6 +15,10 @@ after_initialize do
   require_relative("lib/reporter")
   require_relative("lib/processor")
 
+  # TODO we may want to shrink the max here
+  $prometheus_pipe = DiscoursePrometheus::BigPipe.new(50_000)
+  STDERR.puts "STARTED prom pipe in #{Process.pid}"
+
   # TODO we want this configurable (discourse_) may be a better prefix
   DiscoursePrometheus::PrometheusMetric.default_prefix = 'web_'
 
@@ -35,8 +39,6 @@ after_initialize do
     mount ::DiscoursePrometheus::Engine, at: '/metrics'
   end
 
-  # TODO we may want to shrink the max here
-  $prometheus_pipe = DiscoursePrometheus::BigPipe.new(50_000)
   DiscoursePrometheus::Reporter.start($prometheus_pipe)
 
   # TODO decide if we want to host this in sidekiq and not unicorn master

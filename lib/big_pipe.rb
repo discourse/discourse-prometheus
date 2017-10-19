@@ -7,7 +7,7 @@
 class DiscoursePrometheus::BigPipe
   PROCESS_MESSAGE = SecureRandom.hex
 
-  def initialize(max_messages)
+  def initialize(max_messages, processor: nil, reporter: nil)
     @max_messages = max_messages
 
     @reader, @writer = IO.pipe
@@ -17,12 +17,14 @@ class DiscoursePrometheus::BigPipe
 
     @lock = Mutex.new
 
+    @processor = processor
+    @reporter = reporter
+
     @consumer_thread = Thread.new do
       begin
         consumer_run_loop
       rescue => e
         Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
-        STDERR.puts "#{e}"
       end
     end
   end
@@ -54,17 +56,24 @@ class DiscoursePrometheus::BigPipe
   private
 
   def consumer_run_loop
-    STDERR.puts "RUN LOOP STARTED #{Process.pid}"
     while true
       message = @reader.gets
-      STDERR.puts "GOT MESSAGE #{object_id}"
       message.strip!
 
       if message == PROCESS_MESSAGE
         messages = nil
         @lock.synchronize do
           messages = @messages
-          @messages = []
+          @messages = [] unless @messages.length == 0
+        end
+
+        if @reporter
+          begin
+            messages = @reporter.report(messages)
+          rescue => e
+            Rails.logger.warn("Error reporting on messages #{e}")
+            messages = []
+          end
         end
 
         @producer_writer.puts messages.length
@@ -73,7 +82,15 @@ class DiscoursePrometheus::BigPipe
         end
       else
         @lock.synchronize do
-          @messages << message
+          if @processor
+            message = @processor.process(message)
+            if message
+              @messages << message
+            end
+          else
+            @messages << message
+          end
+
           @messages.shift if @messages.length > @max_messages
         end
       end

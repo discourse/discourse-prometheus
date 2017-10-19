@@ -14,10 +14,10 @@ after_initialize do
   require_relative("lib/metric")
   require_relative("lib/reporter")
   require_relative("lib/processor")
+  require_relative("lib/metric_collector")
 
   # TODO we may want to shrink the max here
-  $prometheus_pipe = DiscoursePrometheus::BigPipe.new(50_000)
-  STDERR.puts "STARTED prom pipe in #{Process.pid}"
+  $prometheus_collector = DiscoursePrometheus::MetricCollector.new
 
   # TODO we want this configurable (discourse_) may be a better prefix
   DiscoursePrometheus::PrometheusMetric.default_prefix = 'web_'
@@ -39,7 +39,7 @@ after_initialize do
     mount ::DiscoursePrometheus::Engine, at: '/metrics'
   end
 
-  DiscoursePrometheus::Reporter.start($prometheus_pipe)
+  DiscoursePrometheus::Reporter.start($prometheus_collector)
 
   # TODO decide if we want to host this in sidekiq and not unicorn master
   # require_dependency 'demon/sidekiq'

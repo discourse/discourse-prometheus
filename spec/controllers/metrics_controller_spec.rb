@@ -6,7 +6,7 @@ describe ::DiscoursePrometheus::MetricsController do
   it "generates a correct status" do
 
     metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, host: "bobsie")
-    $prometheus_pipe << metric.to_s
+    $prometheus_collector << metric
 
     get :index
     expect(response.status).to eq(200)

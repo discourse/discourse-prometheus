@@ -66,20 +66,13 @@ module DiscoursePrometheus
         Sidekiq::ProcessSet.new.size || 0
       )
 
-      add_request_metrics
-
       render plain: <<~TEXT
       #{@metrics.map(&:to_prometheus_text).join("\n\n")}
+      #{$prometheus_collector.prometheus_metrics_text}
       TEXT
     end
 
     private
-
-      def add_request_metrics
-        Processor.process($prometheus_pipe.process.to_enum).each do |metric|
-          @metrics << metric
-        end
-      end
 
       def add_gauge(name, help, value)
         gauge = Gauge.new(name, help)

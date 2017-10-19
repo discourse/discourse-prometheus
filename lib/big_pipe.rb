@@ -22,6 +22,7 @@ class DiscoursePrometheus::BigPipe
         consumer_run_loop
       rescue => e
         Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
+        STDERR.puts "#{e}"
       end
     end
   end
@@ -31,6 +32,8 @@ class DiscoursePrometheus::BigPipe
   end
 
   def process
+    return enum_for(:process) unless block_given?
+
     @writer.puts(PROCESS_MESSAGE)
 
     count = @producer_reader.gets.to_i
@@ -51,8 +54,10 @@ class DiscoursePrometheus::BigPipe
   private
 
   def consumer_run_loop
+    STDERR.puts "RUN LOOP STARTED #{Process.pid}"
     while true
       message = @reader.gets
+      STDERR.puts "GOT MESSAGE #{object_id}"
       message.strip!
 
       if message == PROCESS_MESSAGE

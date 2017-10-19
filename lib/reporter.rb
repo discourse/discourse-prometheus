@@ -26,7 +26,8 @@ class DiscoursePrometheus::Reporter
 
   def log_prom_later(message)
     Scheduler::Defer.later("Prom stats", _db = nil) do
-      @pipe.puts(message.to_s)
+      STDERR.puts(message.to_s + " pipe #{@pipe.object_id}")
+      @pipe << message.to_s
     end
   end
 end

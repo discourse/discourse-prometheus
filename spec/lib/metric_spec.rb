@@ -1,6 +1,12 @@
 require 'rails_helper'
 
 describe DiscoursePrometheus::Metric do
+  it "Can round trip host" do
+    metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, host: "bob")
+    metric = DiscoursePrometheus::Metric.parse(metric.to_s)
+    expect(metric.host).to eq("bob")
+  end
+
   it "Can round trip to a string" do
     metric = DiscoursePrometheus::Metric.new
 

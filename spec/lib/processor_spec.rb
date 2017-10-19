@@ -3,6 +3,26 @@ require 'rails_helper'
 module DiscoursePrometheus
   describe Processor do
 
+    it "Can pass in via a pipe" do
+
+      pipe = BigPipe.new(3)
+      metric = Metric.get(tracked: true, status_code: 200, host: "bob")
+      pipe << metric.to_s
+
+      metrics = Processor.process(pipe.process)
+
+      page_views = metrics.find { |m| m.name == "page_views" }
+      expected = {
+        {
+          host: "",
+          type: "anon",
+          device: "desktop"
+        } => 1
+      }
+      expect(page_views.data).to eq(expected)
+
+    end
+
     it "Can count metrics correctly" do
       metrics = []
       metrics << Metric.get(tracked: true, status_code: 200, host: "bob")

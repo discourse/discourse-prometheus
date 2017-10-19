@@ -8,7 +8,11 @@ module DiscoursePrometheus
       redis_config = GlobalSetting.redis_config
 
       redis_master_running = test_redis(redis_config[:host], redis_config[:port], redis_config[:password])
-      redis_slave_running = test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
+      redis_slave_running = 0
+
+      if redis_config[:slave_host]
+        test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
+      end
 
       net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
 
@@ -65,22 +69,22 @@ module DiscoursePrometheus
       add_request_metrics
 
       render plain: <<~TEXT
-      #{@metrics.map(&:metric_text).join("\n\n")}
+      #{@metrics.map(&:to_prometheus_text).join("\n\n")}
       TEXT
     end
 
     private
 
       def add_request_metrics
-        Processor.process($prometheus_pipe.process.to_enum).each do
-          @gauges << gauge
+        Processor.process($prometheus_pipe.process.to_enum).each do |metric|
+          @metrics << metric
         end
       end
 
       def add_gauge(name, help, value)
         gauge = Gauge.new(name, help)
         gauge.observe(value)
-        @gauges << gauge
+        @metrics << gauge
       end
 
       def primary_site_readonly?

@@ -57,7 +57,7 @@ class ::DiscoursePrometheus::Metric
   def self.parse(str)
     result = self.new
 
-    split = str.split(' ')
+    split = str.split(/[ ]/)
 
     i = 0
 

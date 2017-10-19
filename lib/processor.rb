@@ -6,7 +6,11 @@ class ::DiscoursePrometheus::Processor
 
     begin
       while true
-        processor.process metrics.next
+        metric = metrics.next
+        if String === metric
+          metric = DiscoursePrometheus::Metric.parse(metric)
+        end
+        processor.process metric
       end
     rescue StopIteration
     end

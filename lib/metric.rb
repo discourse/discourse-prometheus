@@ -46,6 +46,16 @@ class ::DiscoursePrometheus::Metric
     end
   RUBY
 
+  # for debugging
+  def to_h
+    h = {}
+    FLOAT_ATTRS.each { |f| h[f] = send f }
+    INT_ATTRS.each { |i| h[i] = send i }
+    BOOL_ATTRS.each { |b| h[b] = send b }
+    STRING_ATTRS.each { |s| h[s] = send s }
+    h
+  end
+
   def self.get(hash)
     metric = new
     hash.each do |k, v|
@@ -94,7 +104,7 @@ class ::DiscoursePrometheus::Metric
     end
 
     if timing = data[:timing]
-      metric.duration = timing[:duration]
+      metric.duration = timing[:total_duration]
 
       if sql = timing[:sql]
         metric.sql_duration = sql[:duration]

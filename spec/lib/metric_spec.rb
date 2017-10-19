@@ -104,7 +104,7 @@ describe DiscoursePrometheus::Metric do
     it "Can fish out timings if available" do
       data = {
         timing: {
-          duration: 0.1,
+          total_duration: 0.1,
           sql: { duration: 0.2, calls: 5 },
           redis: { duration: 0.3, calls: 6 }
         }

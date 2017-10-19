@@ -11,6 +11,9 @@ after_initialize do
   require_relative("lib/prometheus_metric")
   require_relative("lib/counter")
   require_relative("lib/gauge")
+  require_relative("lib/third_party/estimator.rb")
+  require_relative("lib/third_party/quantile.rb")
+  require_relative("lib/summary")
   require_relative("lib/metric")
   require_relative("lib/reporter")
   require_relative("lib/processor")
@@ -19,8 +22,7 @@ after_initialize do
   # TODO we may want to shrink the max here
   $prometheus_collector = DiscoursePrometheus::MetricCollector.new
 
-  # TODO we want this configurable (discourse_) may be a better prefix
-  DiscoursePrometheus::PrometheusMetric.default_prefix = 'web_'
+  DiscoursePrometheus::PrometheusMetric.default_prefix = 'discourse_'
 
   module ::DiscoursePrometheus
     class Engine < ::Rails::Engine

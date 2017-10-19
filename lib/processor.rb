@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ::DiscoursePrometheus::Processor
 
   # returns an array of Prometheus metrics
@@ -21,9 +23,27 @@ class ::DiscoursePrometheus::Processor
   def initialize
     @page_views = DiscoursePrometheus::Counter.new("page_views", "Page views reported by admin dashboard")
     @http_requests = DiscoursePrometheus::Counter.new("http_requests", "Total HTTP requests from web app")
+
+    @http_duration_seconds = DiscoursePrometheus::Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
+    @http_redis_duration_seconds = DiscoursePrometheus::Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
+    @http_sql_duration_seconds = DiscoursePrometheus::Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
   end
 
   def process(metric)
+    # STDERR.puts metric.to_h.inspect
+    # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
+
+    @http_duration_seconds.observe(metric.duration)
+    @http_sql_duration_seconds.observe(metric.sql_duration)
+    @http_redis_duration_seconds.observe(metric.redis_duration)
+
+    if observe_timings?(metric)
+      labels = { controller: metric.controller, action: metric.action }
+      @http_duration_seconds.observe(metric.duration, labels)
+      @http_sql_duration_seconds.observe(metric.sql_duration, labels)
+      @http_redis_duration_seconds.observe(metric.redis_duration, labels)
+    end
+
     if metric.tracked
       hash = { host: metric.host }
       if metric.crawler
@@ -45,6 +65,17 @@ class ::DiscoursePrometheus::Processor
   end
 
   def prometheus_metrics
-    [@page_views, @http_requests]
+    [@page_views, @http_requests, @http_duration_seconds,
+     @http_redis_duration_seconds, @http_sql_duration_seconds]
+  end
+
+  private
+
+  def observe_timings?(metric)
+    (metric.controller == "list" && metric.action == "latest") ||
+    (metric.controller == "list" && metric.action == "top") ||
+    (metric.controller == "topics" && metric.action == "show") ||
+    (metric.controller == "users" && metric.action == "show") ||
+    (metric.controller == "categories" && metric.action == "categories_and_latest")
   end
 end

@@ -15,7 +15,7 @@ module DiscoursePrometheus
       if intercept?(env)
         metrics(env)
       else
-        @app.call
+        @app.call(env)
       end
     end
 

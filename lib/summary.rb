@@ -9,9 +9,7 @@ module DiscoursePrometheus
 
     def initialize(name, help)
       super
-      @estimators = {
-        {} => Estimator.new
-      }
+      @estimators = {}
     end
 
     def type

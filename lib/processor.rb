@@ -33,24 +33,25 @@ class ::DiscoursePrometheus::Processor
     # STDERR.puts metric.to_h.inspect
     # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
-    @http_duration_seconds.observe(metric.duration)
-    @http_sql_duration_seconds.observe(metric.sql_duration)
-    @http_redis_duration_seconds.observe(metric.redis_duration)
+    labels =
+      if observe_timings?(metric)
+        { controller: metric.controller, action: metric.action }
+      else
+        { controller: 'other', action: 'other' }
+      end
 
-    if observe_timings?(metric)
-      labels = { controller: metric.controller, action: metric.action }
-      @http_duration_seconds.observe(metric.duration, labels)
-      @http_sql_duration_seconds.observe(metric.sql_duration, labels)
-      @http_redis_duration_seconds.observe(metric.redis_duration, labels)
-    end
+    @http_duration_seconds.observe(metric.duration, labels)
+    @http_sql_duration_seconds.observe(metric.sql_duration, labels)
+    @http_redis_duration_seconds.observe(metric.redis_duration, labels)
+
+    db = metric.db.presence || "default"
 
     if metric.tracked
-      hash = {}
-      if metric.db.present?
-        hash[:db] = metric.db
-      end
+      hash = { db: db }
+
       if metric.crawler
         hash[:type] = "crawler"
+        hash[:device] = "crawler"
       else
         hash[:type] = metric.logged_in ? "logged_in" : "anon"
         hash[:device] = metric.mobile ? "mobile" : "desktop"
@@ -58,13 +59,12 @@ class ::DiscoursePrometheus::Processor
       @page_views.observe(hash)
     end
 
-    hash = {}
-    if metric.db.present?
-      hash[:db] = metric.db
-    end
+    hash = { db: db }
     if metric.background && metric.status_code < 500
       hash[:type] = "background"
+      hash[:status] = "-1"
     else
+      hash[:type] = "regular"
       hash[:status] = metric.status_code
     end
     @http_requests.observe(hash)

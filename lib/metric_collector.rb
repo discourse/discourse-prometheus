@@ -7,7 +7,7 @@ module DiscoursePrometheus
     end
 
     def <<(metric)
-      @pipe << metric.to_s
+      @pipe << metric
     end
 
     def prometheus_metrics_text
@@ -19,8 +19,7 @@ module DiscoursePrometheus
       text
     end
 
-    def process(message)
-      metric = Metric.parse(message)
+    def process(metric)
       @processor.process(metric)
       nil
     end

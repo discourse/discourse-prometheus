@@ -30,17 +30,18 @@ class DiscoursePrometheus::BigPipe
   end
 
   def <<(msg)
-    @writer.puts msg.to_s
+    Marshal.dump(msg, @writer)
   end
 
   def process
     return enum_for(:process) unless block_given?
 
-    @writer.puts(PROCESS_MESSAGE)
+    Marshal.dump(PROCESS_MESSAGE, @writer)
 
     count = @producer_reader.gets.to_i
+
     while count > 0
-      yield @producer_reader.gets.strip!
+      yield Marshal.load(@producer_reader)
       count -= 1
     end
   end
@@ -57,8 +58,7 @@ class DiscoursePrometheus::BigPipe
 
   def consumer_run_loop
     while true
-      message = @reader.gets
-      message.strip!
+      message = Marshal.load(@reader)
 
       if message == PROCESS_MESSAGE
         messages = nil
@@ -78,7 +78,7 @@ class DiscoursePrometheus::BigPipe
 
         @producer_writer.puts messages.length
         messages.each do |m|
-          @producer_writer.puts m
+          Marshal.dump(m, @producer_writer)
         end
       else
         @lock.synchronize do

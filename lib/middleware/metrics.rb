@@ -23,13 +23,24 @@ module DiscoursePrometheus
 
     PRIVATE_IP = /^(127\.)|(192\.168\.)|(10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(::1$)|([fF][cCdD])/
 
+    def is_private_ip?(env)
+      request = Rack::Request.new(env)
+      ip = IPAddr.new(request.ip) rescue nil
+      !!(ip && ip.to_s =~ PRIVATE_IP)
+    end
+
+    def is_admin?(env)
+      host = RailsMultisite::ConnectionManagement.host(env)
+      result = false
+      RailsMultisite::ConnectionManagement.with_hostname(host) do
+        result = !!CurrentUser.lookup_from_env(env)&.admin
+      end
+      result
+    end
+
     def intercept?(env)
-      if env["PATH_INFO"] == "/metrics"
-        request = Rack::Request.new(env)
-        ip = IPAddr.new(request.ip) rescue nil
-        if ip
-          return !!(ip.to_s =~ PRIVATE_IP)
-        end
+      if env["PATH_INFO"] == "/metrics2"
+        return is_private_ip?(env) || is_admin?(env)
       end
       false
     end

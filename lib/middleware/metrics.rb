@@ -63,26 +63,26 @@ module DiscoursePrometheus
       )
 
       add_gauge(
-        "recently_readonly_mode",
+        "transient_readonly_mode",
         "Indicates whether site is in a transient readonly mode",
         recently_readonly?
       )
 
       add_gauge(
-        "running_redis_masters",
-        "Number of running redis masters in a web container",
+        "redis_master_available",
+        "Whether or not we have an active connection to the master Redis",
         redis_master_running
       )
 
       add_gauge(
-        "running_redis_slaves",
-        "Number of running redis slaves in a web container",
+        "redis_slave_available",
+        "Whether or not we have an active connection a Redis slave",
         redis_slave_running
       )
 
       add_gauge(
         "active_app_reqs",
-        "Number of active web requests",
+        "Number of active web requests in progress",
         net_stats.active
       )
 

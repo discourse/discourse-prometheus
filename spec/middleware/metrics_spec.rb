@@ -3,7 +3,7 @@ require "rails_helper"
 describe ::DiscoursePrometheus::Middleware::Metrics do
 
   let :middleware do
-    app = lambda { [404, {}, ["not found"]] }
+    app = lambda { |env| [404, {}, ["not found"]] }
     ::DiscoursePrometheus::Middleware::Metrics.new(app)
   end
 
@@ -22,7 +22,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
 
     expect(status).to eq(200)
     expect(headers["Content-Type"]).to eq('text/plain; charset=utf-8')
-    expect(body).to include('redis masters in a web')
+    expect(body).to include('master Redis')
     expect(body).to include('bobsie')
   end
 end

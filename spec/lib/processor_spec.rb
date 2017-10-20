@@ -15,7 +15,8 @@ module DiscoursePrometheus
       expected = {
         {
           type: "anon",
-          device: "desktop"
+          device: "desktop",
+          db: "default"
         } => 1
       }
       expect(page_views.data).to eq(expected)
@@ -46,11 +47,11 @@ module DiscoursePrometheus
 
       http_requests = processed.find { |m| m.name == "http_requests" }
       expected = {
-        { db: "bob", status: 200 } => 3,
-        { db: "bill", status: 200 } => 1,
-        { db: "jake", status: 200 } => 1,
-        { db: "bob", status: 300 } => 1,
-        { db: "bob", type: "background" } => 1
+        { db: "bob", status: 200, type: "regular" } => 3,
+        { db: "bill", status: 200, type: "regular" } => 1,
+        { db: "jake", status: 200, type: "regular" } => 1,
+        { db: "bob", status: 300, type: "regular" } => 1,
+        { db: "bob", status: "-1", type: "background" } => 1
       }
       expect(http_requests.data).to eq(expected)
     end

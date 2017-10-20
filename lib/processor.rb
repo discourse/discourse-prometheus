@@ -45,7 +45,10 @@ class ::DiscoursePrometheus::Processor
     end
 
     if metric.tracked
-      hash = { host: metric.host }
+      hash = {}
+      if metric.db.present?
+        hash[:db] = metric.db
+      end
       if metric.crawler
         hash[:type] = "crawler"
       else
@@ -55,7 +58,10 @@ class ::DiscoursePrometheus::Processor
       @page_views.observe(hash)
     end
 
-    hash = { host: metric.host }
+    hash = {}
+    if metric.db.present?
+      hash[:db] = metric.db
+    end
     if metric.background && metric.status_code < 500
       hash[:type] = "background"
     else

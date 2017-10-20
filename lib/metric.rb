@@ -26,6 +26,7 @@ class ::DiscoursePrometheus::Metric
     controller
     action
     host
+    db
   }
 
   (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each do |attr|
@@ -93,10 +94,25 @@ class ::DiscoursePrometheus::Metric
     result
   end
 
+  def self.multisite?
+    @multisite ||= (
+      File.exists?(RailsMultisite::ConnectionManagement.config_filename) ? :true : :false
+    ) == :true
+  end
+
   def self.from_env_data(env, data, host)
     metric = self.new
 
     data ||= {}
+
+    if multisite?
+      spec = Rails::ConnectionManagement.connection_spec(host: host)
+      if spec
+        metric.db = spec[:database]
+      end
+    else
+      metric.db = nil
+    end
 
     if ad_params = env['action_dispatch.request.parameters']
       metric.controller = ad_params['controller']

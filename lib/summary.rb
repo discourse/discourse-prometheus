@@ -36,7 +36,7 @@ module DiscoursePrometheus
 
     def observe(value, labels = {})
       estimator = @estimators[labels] ||= Estimator.new
-      estimator.observe(value)
+      estimator.observe(value.to_f)
     end
 
   end

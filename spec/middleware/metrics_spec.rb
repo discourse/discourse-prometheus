@@ -14,7 +14,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
 
   it "generates a correct status" do
 
-    metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, host: "bobsie")
+    metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, db: "bobsie")
     $prometheus_collector << metric
 
     status, headers, body = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '192.168.1.1')

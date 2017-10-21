@@ -39,7 +39,7 @@ module DiscoursePrometheus
     end
 
     def intercept?(env)
-      if env["PATH_INFO"] == "/metrics2"
+      if env["PATH_INFO"] == "/metrics"
         return is_private_ip?(env) || is_admin?(env)
       end
       false
@@ -60,7 +60,7 @@ module DiscoursePrometheus
       redis_slave_running = 0
 
       if redis_config[:slave_host]
-        test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
+        redis_slave_running = test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
       end
 
       net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]

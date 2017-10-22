@@ -8,7 +8,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
   end
 
   it "will 404 for unauthed" do
-    status, = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '200.0.1.1')
+    status, = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '200.0.1.1', "rack.input" => StringIO.new)
     expect(status).to eq(404)
   end
 

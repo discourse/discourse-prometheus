@@ -16,6 +16,7 @@ require_relative("lib/processor")
 require_relative("lib/metric_collector")
 require_relative("lib/process_collector")
 require_relative("lib/process_metric")
+require_relative("lib/job_metric")
 require_relative("lib/middleware/metrics")
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
@@ -29,5 +30,21 @@ after_initialize do
   end
   DiscourseEvent.on(:web_fork_started) do
     DiscoursePrometheus::ProcessCollector.start($prometheus_collector, :web)
+  end
+
+  DiscourseEvent.on(:scheduled_job_ran) do |stat|
+    metric = DiscoursePrometheus::JobMetric.new
+    metric.scheduled = true
+    metric.job_name = stat.name
+    metric.duration = stat.duration_ms * 0.001
+    $prometheus_collector << metric
+  end
+
+  DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|
+    metric = DiscoursePrometheus::JobMetric.new
+    metric.scheduled = true
+    metric.duration = duration
+    metric.job_name = worker.class.to_s
+    $prometheus_collector << metric
   end
 end

@@ -23,12 +23,16 @@ module ::DiscoursePrometheus
     end
 
     def initialize
-      @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
-      @http_requests = Counter.new("http_requests", "Total HTTP requests from web app")
+      @page_views = nil
+      @http_requests = nil
+      @http_duration_seconds = nil
+      @http_redis_duration_seconds = nil
+      @http_sql_duration_seconds = nil
 
-      @http_duration_seconds = Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
-      @http_redis_duration_seconds = Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
-      @http_sql_duration_seconds = Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
+      @scheduled_job_duration_seconds = nil
+      @scheduled_job_count = nil
+      @sidekiq_job_duration_seconds = nil
+      @sidekiq_job_count = nil
 
       @process_metrics = []
     end
@@ -38,7 +42,30 @@ module ::DiscoursePrometheus
         process_process(metric)
       elsif Metric === metric
         process_web(metric)
+      elsif JobMetric === metric
+        process_job(metric)
       end
+    end
+
+    def process_job(metric)
+      ensure_job_metrics
+      hash = {
+        job_name: metric.job_name
+      }
+      if metric.scheduled
+        @scheduled_job_duration_seconds.observe(hash, metric.duration)
+        @scheduled_job_count.observe(hash, 1)
+      else
+        @sidekiq_job_duration_seconds.observe(hash, metric.duration)
+        @sidekiq_job_count.observe(hash, 1)
+      end
+    end
+
+    def ensure_job_metrics
+      @scheduled_job_duration_seconds = Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
+      @scheduled_job_count = Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
+      @sidekiq_job_duration_seconds = Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
+      @sidekiq_job_count = Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
     end
 
     def process_process(metric)
@@ -49,7 +76,18 @@ module ::DiscoursePrometheus
       @process_metrics << metric
     end
 
+    def ensure_web_metrics
+      unless @page_views
+        @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
+        @http_requests = Counter.new("http_requests", "Total HTTP requests from web app")
+        @http_duration_seconds = Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
+        @http_redis_duration_seconds = Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
+        @http_sql_duration_seconds = Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
+      end
+    end
+
     def process_web(metric)
+      ensure_web_metrics
       # STDERR.puts metric.to_h.inspect
       # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
@@ -90,6 +128,26 @@ module ::DiscoursePrometheus
       @http_requests.observe(hash)
     end
 
+    def prometheus_metrics
+      web_metrics + process_metrics + job_metrics
+    end
+
+    private
+
+    def job_metrics
+      if @scheduled_job_duration_seconds
+        [
+          @scheduled_job_duration_seconds,
+          @scheduled_job_count,
+          @sidekiq_job_duration_seconds,
+          @sidekiq_job_count,
+        ]
+      else
+        []
+      end
+
+    end
+
     def process_metrics
       # this are only calculated when we ask for them on the fly
       return [] if @process_metrics.length == 0
@@ -111,12 +169,14 @@ module ::DiscoursePrometheus
       metrics
     end
 
-    def prometheus_metrics
-      [@page_views, @http_requests, @http_duration_seconds,
-       @http_redis_duration_seconds, @http_sql_duration_seconds] + process_metrics
+    def web_metrics
+      if @page_views
+        [@page_views, @http_requests, @http_duration_seconds,
+          @http_redis_duration_seconds, @http_sql_duration_seconds]
+      else
+        []
+      end
     end
-
-    private
 
     def observe_timings?(metric)
       (metric.controller == "list" && metric.action == "latest") ||

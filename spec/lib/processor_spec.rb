@@ -3,6 +3,24 @@ require 'rails_helper'
 module DiscoursePrometheus
   describe Processor do
 
+    it "Can handle scheduled job metrics" do
+      processor = Processor.new
+      metric = JobMetric.new
+
+      metric.scheduled = true
+      metric.job_name = "Bob"
+      metric.duration = 1.778
+
+      processor.process(metric)
+      metrics = processor.prometheus_metrics
+
+      duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
+      count = metrics.find { |m| m.name == "scheduled_job_count" }
+
+      expect(duration.data).to eq({ job_name: "Bob" } => 1.778)
+      expect(count.data).to eq({ job_name: "Bob" } => 1)
+    end
+
     it "Can handle process metrics" do
       processor = Processor.new
       collector = ProcessCollector.new(:web)

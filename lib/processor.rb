@@ -62,10 +62,12 @@ module ::DiscoursePrometheus
     end
 
     def ensure_job_metrics
-      @scheduled_job_duration_seconds = Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
-      @scheduled_job_count = Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
-      @sidekiq_job_duration_seconds = Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
-      @sidekiq_job_count = Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
+      unless @scheduled_job_count
+        @scheduled_job_duration_seconds = Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
+        @scheduled_job_count = Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
+        @sidekiq_job_duration_seconds = Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
+        @sidekiq_job_count = Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
+      end
     end
 
     def process_process(metric)

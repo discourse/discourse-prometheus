@@ -3,11 +3,22 @@ require 'rails_helper'
 module DiscoursePrometheus
   describe Processor do
 
+    it "Can handle process metrics" do
+      processor = Processor.new
+      collector = ProcessCollector.new(:web)
+      processor.process(collector.collect)
+
+      metrics = processor.prometheus_metrics
+      rss = metrics.find { |m| m.name == "rss" }
+
+      expect(rss.data[type: :web, pid: Process.pid]).to be > 0
+    end
+
     it "Can pass in via a pipe" do
 
       pipe = BigPipe.new(3)
       metric = Metric.get(tracked: true, status_code: 200, host: "bob")
-      pipe << metric.to_s
+      pipe << metric
 
       metrics = Processor.process(pipe.process)
 

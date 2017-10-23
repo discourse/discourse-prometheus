@@ -1,5 +1,7 @@
 class DiscoursePrometheus::Gauge < DiscoursePrometheus::PrometheusMetric
 
+  attr_reader :data
+
   def initialize(name, help)
     super
     @data = {}

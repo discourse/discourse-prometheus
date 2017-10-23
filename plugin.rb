@@ -42,7 +42,7 @@ after_initialize do
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|
     metric = DiscoursePrometheus::JobMetric.new
-    metric.scheduled = true
+    metric.scheduled = false
     metric.duration = duration
     metric.job_name = worker.class.to_s
     $prometheus_collector << metric

@@ -1,1 +1,1 @@
-# Not ready yet, work in progress prometheus plugin
+# see: https://meta.discourse.org/t/prometheus-exporter-plugin-for-discourse/72666

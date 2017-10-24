@@ -106,9 +106,9 @@ class ::DiscoursePrometheus::Metric
     data ||= {}
 
     if multisite?
-      spec = Rails::ConnectionManagement.connection_spec(host: host)
+      spec = RailsMultisite::ConnectionManagement.connection_spec(host: host)
       if spec
-        metric.db = spec[:database]
+        metric.db = spec.config[:database]
       end
     else
       metric.db = nil

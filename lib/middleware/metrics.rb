@@ -123,6 +123,7 @@ module DiscoursePrometheus
         end
       rescue Timeout::Error
         # we timed out ... bummer
+        STDERR.puts "Generating Prometheus metrics text timed out"
       end
 
       add_gauge(

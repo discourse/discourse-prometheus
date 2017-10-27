@@ -7,21 +7,23 @@ module DiscoursePrometheus; end
 require_relative '../lib/big_pipe'
 
 $pipe = DiscoursePrometheus::BigPipe.new(10)
-i = 50
+i = 500
 
 10.times do
   fork do
-    1_000_000.times do
+    10_000.times do
       i += 1
       $pipe << "message #{i} #{Process.pid}"
     end
-    p "DONE #{Process.pid}"
+    $pipe.flush
   end
 end
 
+sleep 5
+
 $pipe << "hello"
-sleep 30
 $pipe << "hello"
+$pipe.flush
 
 $pipe.process do |x|
   p x

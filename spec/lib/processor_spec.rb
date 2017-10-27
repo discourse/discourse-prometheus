@@ -37,6 +37,7 @@ module DiscoursePrometheus
       pipe = BigPipe.new(3)
       metric = Metric.get(tracked: true, status_code: 200, host: "bob")
       pipe << metric
+      pipe.flush
 
       metrics = Processor.process(pipe.process)
 

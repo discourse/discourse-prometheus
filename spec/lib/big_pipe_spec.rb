@@ -39,6 +39,8 @@ module DiscoursePrometheus
       pipe << "c"
       pipe << "d"
 
+      pipe.flush
+
       messages = []
       pipe.process do |message|
         messages << message
@@ -51,6 +53,8 @@ module DiscoursePrometheus
       pipe = new_pipe(3, reporter: Doubler.new)
       pipe << "a"
       pipe << "b"
+
+      pipe.flush
 
       messages = []
       pipe.process do |message|
@@ -66,6 +70,8 @@ module DiscoursePrometheus
       pipe << "b"
       pipe << "c"
       pipe << "d"
+
+      pipe.flush
 
       messages = []
       pipe.process do |message|

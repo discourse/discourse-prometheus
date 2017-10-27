@@ -2,6 +2,7 @@
 
 require 'raindrops'
 require 'ipaddr'
+require 'timeout'
 
 module DiscoursePrometheus
   module Middleware; end
@@ -115,9 +116,24 @@ module DiscoursePrometheus
         Sidekiq::ProcessSet.new.size || 0
       )
 
+      metric_text = nil
+      begin
+        Timeout::timeout(2) do
+          metric_text = $prometheus_collector.prometheus_metrics_text
+        end
+      rescue Timeout::Error
+        # we timed out ... bummer
+      end
+
+      add_gauge(
+        "collector_working",
+        "Is the master process collector able to collect metrics",
+        metric_text.present? ? 1 : 0
+      )
+
       <<~TEXT
       #{@metrics.map(&:to_prometheus_text).join("\n\n")}
-      #{$prometheus_collector.prometheus_metrics_text}
+      #{metric_text}
       TEXT
     end
 

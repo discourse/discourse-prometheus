@@ -11,8 +11,8 @@ $pipe = DiscoursePrometheus::BigPipe.new(3)
 5.times do
   fork do
     begin
-      100.times do
-        $pipe << "100"
+      100_000.times do
+        $pipe << "100" * 100
       end
     rescue => e
       p e
@@ -21,18 +21,27 @@ $pipe = DiscoursePrometheus::BigPipe.new(3)
   end
 
   fork do
-    100.times do
-      $pipe << "200"
+    100_000.times do
+      p "HERE"
+      begin
+        $pipe << "200" * 100
+      rescue => e
+        p e
+      end
     end
     exit
   end
 
   fork do
-    $pipe.process do |message|
-      puts message
+    100.times do
+      $pipe.process do |message|
+        puts message
+      end
     end
 
     exit
   end
   sleep 0.1
 end
+
+sleep 10

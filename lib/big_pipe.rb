@@ -5,16 +5,73 @@
 #
 # Thread safe
 class DiscoursePrometheus::BigPipe
+
+  class RobustPipe
+    SEP = "\x00\x01\x02"
+    REPLACE_SEP = SecureRandom.bytes(16)
+
+    def initialize
+      @reader, @writer = IO.pipe
+      @reader.binmode
+      @writer.binmode
+
+      @buffer = String.new
+    end
+
+    def <<(data)
+      encoded = encode(Marshal.dump(data))
+      @writer.syswrite(encoded << SEP)
+    end
+
+    def read
+      while !has_object?
+        @buffer << @reader.sysread(10_000)
+      end
+      next_object
+    end
+
+    def close
+      @writer.close
+      @reader.close
+    end
+
+    private
+
+    def has_object?
+      @buffer.include? SEP
+    end
+
+    def next_object
+      i = @buffer.index(SEP)
+      encoded = @buffer[0..i]
+      @buffer[0..i + SEP.length - 1] = ''
+      decode(encoded)
+    end
+
+    def decode(data)
+      data.gsub!(REPLACE_SEP, SEP)
+      Marshal.load(data)
+    end
+
+    def encode(data)
+      if data.include? SEP
+        data.gsub(SEP, REPLACE_SEP)
+      else
+        data
+      end
+    end
+  end
+
   MAX_QUEUED = 10_000
 
   PROCESS_MESSAGE = SecureRandom.hex
-  attr_reader :reader, :writer, :producer_reader, :producer_writer
+  attr_reader :consumer_pipe, :reporter_pipe
 
   def initialize(max_messages, processor: nil, reporter: nil)
     @max_messages = max_messages
 
-    @reader, @writer = IO.pipe
-    @producer_reader, @producer_writer = IO.pipe
+    @consumer_pipe = RobustPipe.new
+    @reporter_pipe = RobustPipe.new
 
     @messages = []
 
@@ -24,10 +81,14 @@ class DiscoursePrometheus::BigPipe
     @reporter = reporter
 
     @consumer_thread = Thread.new do
-      begin
-        consumer_run_loop
-      rescue => e
-        Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
+      while true
+        begin
+          consumer_run_loop
+        rescue => e
+          puts caller
+          STDERR.puts "Crashed in Prometheus consumer #{e}, recovering"
+          Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
+        end
       end
     end
 
@@ -55,7 +116,8 @@ class DiscoursePrometheus::BigPipe
         begin
           producer_run_loop
         rescue => e
-          Rails.logger.warn("Crashed in Prometheus message producer #{e}")
+          STDERR.puts("Crashed in Prometheus message producer #{e} will recover after next metric")
+          Rails.logger.warn("Crashed in Prometheus message producer #{e} will recover afer next metric")
         end
       end
     end
@@ -63,7 +125,7 @@ class DiscoursePrometheus::BigPipe
 
   def producer_run_loop
     while true
-      Marshal.dump(@producer_queue.pop, @writer)
+      @consumer_pipe << @producer_queue.pop
     end
   end
 
@@ -76,30 +138,28 @@ class DiscoursePrometheus::BigPipe
   def process
     return enum_for(:process) unless block_given?
 
-    Marshal.dump(PROCESS_MESSAGE, @writer)
+    @consumer_pipe << PROCESS_MESSAGE
 
-    count = @producer_reader.gets.to_i
+    count = @reporter_pipe.read
 
     while count > 0
-      yield Marshal.load(@producer_reader)
+      yield @reporter_pipe.read
       count -= 1
     end
   end
 
   def destroy!
-    @reader.close
-    @writer.close
-    @producer_reader.close
-    @producer_writer.close
     @consumer_thread.kill
     @producer_thread.kill
+    @consumer_pipe.close
+    @reporter_pipe.close
   end
 
   private
 
   def consumer_run_loop
     while true
-      message = Marshal.load(@reader)
+      message = @consumer_pipe.read
 
       if message == PROCESS_MESSAGE
         messages = nil
@@ -112,14 +172,15 @@ class DiscoursePrometheus::BigPipe
           begin
             messages = @reporter.report(messages)
           rescue => e
+            STDERR.puts("Error reporting on messages in prometheus Discourse #{e}")
             Rails.logger.warn("Error reporting on messages #{e}")
             messages = []
           end
         end
 
-        @producer_writer.puts messages.length
+        @reporter_pipe << messages.length
         messages.each do |m|
-          Marshal.dump(m, @producer_writer)
+          @reporter_pipe << m
         end
       else
         @lock.synchronize do

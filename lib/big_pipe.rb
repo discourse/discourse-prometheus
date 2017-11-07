@@ -150,7 +150,7 @@ class DiscoursePrometheus::BigPipe
 
   def destroy!
     @consumer_thread.kill
-    @producer_thread.kill
+    @producer_thread.kill if @producer_thread
     @consumer_pipe.close
     @reporter_pipe.close
   end

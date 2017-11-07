@@ -32,6 +32,24 @@ module DiscoursePrometheus
       end
     end
 
+    it "can process no messages" do
+      pipe = new_pipe(3)
+
+      pipe << "x"
+      pipe << "y"
+      pipe.flush
+
+      pipe.process do
+        # should be called twice
+      end
+
+      100.times do
+        pipe.process do
+          raise "pipe is empty should not happen"
+        end
+      end
+    end
+
     it "can correctly process incoming messages on pipe" do
       pipe = new_pipe(3, processor: DropSeconds.new)
       pipe << "a"

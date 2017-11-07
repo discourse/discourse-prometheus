@@ -7,6 +7,12 @@ describe DiscoursePrometheus::Metric do
     expect(metric.host).to eq("bob")
   end
 
+  it "can get blank metrics" do
+    10.times do
+      $prometheus_collector.prometheus_metrics_text
+    end
+  end
+
   it "Can round trip to a string" do
     metric = DiscoursePrometheus::Metric.new
 

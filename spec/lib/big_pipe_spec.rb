@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 module DiscoursePrometheus
+
   describe BigPipe do
     after do
       @pipe.destroy! if @pipe
@@ -30,6 +31,26 @@ module DiscoursePrometheus
       def report(messages)
         messages + messages
       end
+    end
+
+    it "is safe for concurrent calls of process" do
+      # even though we can not guarentee ordering we should be able to handle concurrency
+
+      pipe = new_pipe(100)
+      100.times do
+        pipe << "x"
+      end
+
+      pipe.flush
+
+      i = 0
+      (0..2).map do
+        Thread.new do
+          pipe.process { i += 1 }
+        end
+      end.each(&:join)
+
+      expect(i).to eq(100)
     end
 
     it "can process no messages" do

@@ -11,7 +11,8 @@ module DiscoursePrometheus
     end
 
     def prometheus_metrics_text
-      text = String.new
+      # cause we want UTF-8 not ASCII
+      text = "".dup
       @pipe.process do |line|
         text << line
         text << "\n"

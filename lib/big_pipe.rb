@@ -4,8 +4,11 @@
 # once reached it pops out oldest messages
 #
 # Thread safe
-class DiscoursePrometheus::BigPipe
 
+require 'timeout'
+require 'distributed_mutex'
+
+class DiscoursePrometheus::BigPipe
   class RobustPipe
     SEP = "\x00\x01\x02"
     REPLACE_SEP = SecureRandom.bytes(16)
@@ -95,6 +98,7 @@ class DiscoursePrometheus::BigPipe
     @producer_queue = Queue.new
     @producer_thread = nil
     @mutex = Mutex.new
+    @lock_id = "BigPipe:" + SecureRandom.hex
 
   end
 
@@ -138,13 +142,33 @@ class DiscoursePrometheus::BigPipe
   def process
     return enum_for(:process) unless block_given?
 
-    @consumer_pipe << PROCESS_MESSAGE
+    # This is absolutely cheating, but the alternative
+    # is significantly more complicated
+    DistributedMutex.synchronize(@lock_id, $redis.without_namespace) do
+      @consumer_pipe << PROCESS_MESSAGE
 
-    count = @reporter_pipe.read
+      count = @reporter_pipe.read
 
-    while count > 0
-      yield @reporter_pipe.read
-      count -= 1
+      # in this rare case we have no choice but to junk all the data in the pipe
+      unless (Integer === count) && (count > -1)
+        STDERR.puts "Discourse Prometheus: Underlying reporter pipe is corrupt, trying to flush it out!"
+        Rails.logger.warn "Discourse Prometheus: Underlying reporter pipe is corrupt, trying to flush it out!"
+        # yuck another timeout, but again it simpler to do here than implement non blocking read on the pipe
+        begin
+          Timeout::timeout(1) do
+            while true
+              @reporter_pipe.read
+            end
+          end
+        rescue Timeout::Error
+          # we timed out ... as expected
+        end
+      end
+
+      while count > 0
+        yield @reporter_pipe.read
+        count -= 1
+      end
     end
   end
 

@@ -18,6 +18,9 @@ require_relative("lib/process_collector")
 require_relative("lib/process_metric")
 require_relative("lib/job_metric")
 require_relative("lib/middleware/metrics")
+require_relative("lib/server")
+
+GlobalSetting.add_default :prometheus_collector_port, 9405
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
@@ -25,9 +28,21 @@ after_initialize do
   $prometheus_collector = DiscoursePrometheus::MetricCollector.new
   DiscoursePrometheus::PrometheusMetric.default_prefix = 'discourse_'
   DiscoursePrometheus::Reporter.start($prometheus_collector)
+
+  if Discourse.running_in_rack?
+    $prometheus_web_server = DiscoursePrometheus::Server.new(collector: $prometheus_collector)
+    $prometheus_web_server.start
+  end
+
+  # in dev we use puma and it runs in a single process
+  if Rails.env == "development" && defined?(::Puma)
+    DiscoursePrometheus::ProcessCollector.start($prometheus_collector, :web)
+  end
+
   DiscourseEvent.on(:sidekiq_fork_started) do
     DiscoursePrometheus::ProcessCollector.start($prometheus_collector, :sidekiq)
   end
+
   DiscourseEvent.on(:web_fork_started) do
     DiscoursePrometheus::ProcessCollector.start($prometheus_collector, :web)
   end

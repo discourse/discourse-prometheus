@@ -12,17 +12,16 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(status).to eq(404)
   end
 
-  it "generates a correct status" do
+  it "can proxy the dedicated port" do
 
-    metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, db: "bobsie")
-    $prometheus_collector << metric
+    stub_request(:get, "http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics").
+      to_return(status: 200, body: "hello world", headers: {})
 
     status, headers, body = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '192.168.1.1')
     body = body.join
 
     expect(status).to eq(200)
     expect(headers["Content-Type"]).to eq('text/plain; charset=utf-8')
-    expect(body).to include('master Redis')
-    expect(body).to include('bobsie')
+    expect(body).to include('hello world')
   end
 end

@@ -19,6 +19,7 @@ require_relative("lib/process_metric")
 require_relative("lib/job_metric")
 require_relative("lib/middleware/metrics")
 require_relative("lib/server")
+require_relative("lib/global_metric")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
 

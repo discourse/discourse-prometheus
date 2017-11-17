@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 require 'webrick'
-require 'raindrops'
 require 'timeout'
 
 module DiscoursePrometheus
   class Server
+    attr_reader :global_metrics_collected
+
     def initialize(port: GlobalSetting.prometheus_collector_port, collector:)
 
       @server = WEBrick::HTTPServer.new(
@@ -15,6 +16,13 @@ module DiscoursePrometheus
 
       @collector = collector
       @port = port
+      @global_metrics_collected = false
+
+      # collect globals every 5 seconds
+      # recycle all stats every 30
+      # this happens cause we do a max on queued and active reqs
+      @collect_new_global_seconds = 30
+      @collect_global_seconds = 5
 
       @server.mount_proc '/' do |req, res|
         res['ContentType'] = 'text/plain; charset=utf-8'
@@ -29,6 +37,25 @@ module DiscoursePrometheus
     end
 
     def start
+      @global_collector ||= Thread.start do
+        metrics = GlobalMetric.new
+        i = 0
+
+        while true
+          begin
+            # collect new stats every 30 seconds
+            metrics = GlobalMetric.new if i % (@collect_new_global_seconds / @collect_global_seconds) == 0
+            i += 1
+            metrics.collect
+            @collector << metrics
+            @global_metrics_collected = true
+          rescue => e
+            STDERR.puts "Error collecting global metrics #{e}"
+            Rails.logger.warn("Error collecting global metrics #{e}") rescue nil
+          end
+          sleep @collect_global_seconds
+        end
+      end
       @runner ||= Thread.start do
         begin
           @server.start
@@ -40,70 +67,11 @@ module DiscoursePrometheus
 
     def stop
       @server.shutdown
+      @global_collector.kill if @global_collector && @global_collector.alive?
+      @global_collector = nil
     end
 
     def metrics
-      redis_config = GlobalSetting.redis_config
-
-      redis_master_running = test_redis(redis_config[:host], redis_config[:port], redis_config[:password])
-      redis_slave_running = 0
-
-      if redis_config[:slave_host]
-        redis_slave_running = test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
-      end
-
-      net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
-
-      @metrics = []
-
-      add_gauge(
-        "postgres_readonly_mode",
-        "Indicates whether site is in readonly mode due to PostgreSQL failover",
-        primary_site_readonly?
-      )
-
-      add_gauge(
-        "transient_readonly_mode",
-        "Indicates whether site is in a transient readonly mode",
-        recently_readonly?
-      )
-
-      add_gauge(
-        "redis_master_available",
-        "Whether or not we have an active connection to the master Redis",
-        redis_master_running
-      )
-
-      add_gauge(
-        "redis_slave_available",
-        "Whether or not we have an active connection a Redis slave",
-        redis_slave_running
-      )
-
-      add_gauge(
-        "active_app_reqs",
-        "Number of active web requests in progress",
-        net_stats.active
-      )
-
-      add_gauge(
-        "queued_app_reqs",
-        "Number of queued web requests",
-        net_stats.queued
-      )
-
-      add_gauge(
-        "sidekiq_jobs_enqueued",
-        "Number of jobs queued in the Sidekiq worker processes",
-        Sidekiq::Stats.new.enqueued
-      )
-
-      add_gauge(
-        "sidekiq_processes",
-        "Number of Sidekiq job processors",
-        Sidekiq::ProcessSet.new.size || 0
-      )
-
       metric_text = nil
       begin
         Timeout::timeout(2) do
@@ -113,6 +81,8 @@ module DiscoursePrometheus
         # we timed out ... bummer
         STDERR.puts "Generating Prometheus metrics text timed out"
       end
+
+      @metrics = []
 
       add_gauge(
         "collector_working",
@@ -132,28 +102,5 @@ module DiscoursePrometheus
       @metrics << gauge
     end
 
-    def primary_site_readonly?
-      return "1" unless defined?(Discourse::PG_READONLY_MODE_KEY)
-      $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}") ? "1" : "0"
-    end
-
-    def test_redis(host, port, password)
-      test_connection = Redis.new(host: host, port: port, password: password)
-      test_connection.ping == "PONG" ? 1 : 0
-    rescue
-      0
-    ensure
-      test_connection.close
-    end
-
-    def recently_readonly?
-      recently_readonly = "0"
-
-      RailsMultisite::ConnectionManagement.with_connection('default') do
-        recently_readonly = "1" if Discourse.recently_readonly?
-      end
-
-      recently_readonly
-    end
   end
 end

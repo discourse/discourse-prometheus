@@ -39,6 +39,12 @@ module DiscoursePrometheus
       metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, db: "bobsie")
       collector << metric
 
+      wait_for do
+        server.global_metrics_collected
+      end
+
+      collector.flush
+
       body = Net::HTTP.get(URI("http://localhost:#{available_port}/metrics"))
 
       expect(body).to include('bobsie')

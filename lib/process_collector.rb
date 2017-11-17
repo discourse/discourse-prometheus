@@ -1,7 +1,7 @@
 # collects stats from currently running process
 module DiscoursePrometheus
   class ProcessCollector
-    def self.start(collector, type)
+    def self.start(collector, type, frequency = 30)
       process_collector = new(type)
       Thread.new do
         while true
@@ -11,7 +11,7 @@ module DiscoursePrometheus
           rescue => e
             Rails.logger.warn("Prometheus Discoruse Failed To Collect Process Stats #{e}")
           ensure
-            sleep 30
+            sleep frequency
           end
         end
       end

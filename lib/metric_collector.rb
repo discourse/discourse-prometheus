@@ -16,6 +16,10 @@ module DiscoursePrometheus
       @pipe << metric
     end
 
+    def flush
+      @pipe.flush
+    end
+
     def prometheus_metrics_text
       report.join("\n")
     end

@@ -88,7 +88,6 @@ class DiscoursePrometheus::BigPipe
         begin
           consumer_run_loop
         rescue => e
-          puts caller
           STDERR.puts "Crashed in Prometheus consumer #{e}, recovering"
           Rails.logger.warn("Crashed in Prometheus message consumer #{e}")
         end

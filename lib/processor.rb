@@ -35,6 +35,7 @@ module ::DiscoursePrometheus
       @sidekiq_job_count = nil
 
       @process_metrics = []
+      @global_metrics = []
     end
 
     def process(metric)
@@ -44,7 +45,64 @@ module ::DiscoursePrometheus
         process_web(metric)
       elsif JobMetric === metric
         process_job(metric)
+      elsif GlobalMetric === metric
+        process_global(metric)
       end
+    end
+
+    def process_global(metric)
+      ensure_global_metrics
+      @global_metrics.each do |gauge|
+        gauge.observe(metric.send gauge.name)
+      end
+    end
+
+    def ensure_global_metrics
+      return if @global_metrics.length > 0
+
+      global_metrics = []
+
+      global_metrics << Gauge.new(
+        "postgres_readonly_mode",
+        "Indicates whether site is in readonly mode due to PostgreSQL failover"
+      )
+
+      global_metrics << Gauge.new(
+        "transient_readonly_mode",
+        "Indicates whether site is in a transient readonly mode"
+      )
+
+      global_metrics << Gauge.new(
+        "redis_master_available",
+        "Whether or not we have an active connection to the master Redis",
+      )
+
+      global_metrics << Gauge.new(
+        "redis_slave_available",
+        "Whether or not we have an active connection a Redis slave"
+      )
+
+      global_metrics << Gauge.new(
+        "active_app_reqs",
+        "Number of active web requests in progress"
+      )
+
+      global_metrics << Gauge.new(
+        "queued_app_reqs",
+        "Number of queued web requests"
+      )
+
+      global_metrics << Gauge.new(
+        "sidekiq_jobs_enqueued",
+        "Number of jobs queued in the Sidekiq worker processes"
+      )
+
+      global_metrics << Gauge.new(
+        "sidekiq_processes",
+        "Number of Sidekiq job processors"
+      )
+
+      @global_metrics = global_metrics
     end
 
     def process_job(metric)
@@ -131,7 +189,7 @@ module ::DiscoursePrometheus
     end
 
     def prometheus_metrics
-      web_metrics + process_metrics + job_metrics
+      web_metrics + process_metrics + job_metrics + @global_metrics
     end
 
     private

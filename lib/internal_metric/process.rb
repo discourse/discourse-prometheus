@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-#
-module DiscoursePrometheus
-  class ProcessMetric
+
+module DiscoursePrometheus::InternalMetric
+  class Process
 
     GAUGES = {
       heap_free_slots: "Free ruby heap slots",
@@ -10,7 +10,8 @@ module DiscoursePrometheus
       v8_used_heap_size: "Total used JavaScript V8 heap size (bytes)",
       v8_physical_size: "Physical size consumed by V8 heaps",
       v8_heap_count: "Number of V8 contexts running",
-      rss: "Total RSS used by process"
+      rss: "Total RSS used by process",
+      deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
     }
 
     COUNTERS = {
@@ -31,10 +32,11 @@ module DiscoursePrometheus
       :v8_physical_size,
       :v8_heap_count,
       :pid,
-      :created_at
+      :created_at,
+      :deferred_jobs_queued
 
     def initialize
-      @created_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      @created_at = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC)
     end
   end
 end

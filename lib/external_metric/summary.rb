@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module DiscoursePrometheus
-  class Summary < PrometheusMetric
+module DiscoursePrometheus::ExternalMetric
+  class Summary < Base
 
     QUANTILES = [0.99, 0.9, 0.5, 0.1, 0.01]
     ROTATE_AGE = 120

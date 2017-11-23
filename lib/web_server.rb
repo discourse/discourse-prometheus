@@ -4,7 +4,7 @@ require 'webrick'
 require 'timeout'
 
 module DiscoursePrometheus
-  class Server
+  class WebServer
     attr_reader :global_metrics_collected
 
     def initialize(port: GlobalSetting.prometheus_collector_port, collector:)
@@ -38,13 +38,13 @@ module DiscoursePrometheus
 
     def start
       @global_collector ||= Thread.start do
-        metrics = GlobalMetric.new
+        metrics = InternalMetric::Global.new
         i = 0
 
         while true
           begin
             # collect new stats every 30 seconds
-            metrics = GlobalMetric.new if i % (@collect_new_global_seconds / @collect_global_seconds) == 0
+            metrics = InternalMetric::Global.new if i % (@collect_new_global_seconds / @collect_global_seconds) == 0
             i += 1
             metrics.collect
             @collector << metrics
@@ -97,7 +97,7 @@ module DiscoursePrometheus
     end
 
     def add_gauge(name, help, value)
-      gauge = Gauge.new(name, help)
+      gauge = ExternalMetric::Gauge.new(name, help)
       gauge.observe(value)
       @metrics << gauge
     end

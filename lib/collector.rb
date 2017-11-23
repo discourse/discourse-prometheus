@@ -1,5 +1,5 @@
 module DiscoursePrometheus
-  class MetricCollector
+  class Collector
 
     def initialize
       @pipe = BigPipe.new(0, reporter: self, processor: self)

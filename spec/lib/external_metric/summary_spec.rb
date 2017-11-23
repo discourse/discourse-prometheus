@@ -1,13 +1,13 @@
 require 'rails_helper'
 
-module DiscoursePrometheus
+module DiscoursePrometheus::ExternalMetric
   describe Summary do
     let :summary do
-      DiscoursePrometheus::Summary.new("a_summary", "my amazing summary")
+      Summary.new("a_summary", "my amazing summary")
     end
 
     before do
-      DiscoursePrometheus::PrometheusMetric.default_prefix = ''
+      Base.default_prefix = ''
     end
 
     it "can correctly gather a summary over multiple labels" do

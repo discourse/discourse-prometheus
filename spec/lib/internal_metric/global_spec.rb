@@ -1,9 +1,9 @@
 require 'rails_helper'
 
-module DiscoursePrometheus
-  describe GlobalMetric do
+module DiscoursePrometheus::InternalMetric
+  describe Global do
     it "can collect global metrics" do
-      metric = GlobalMetric.new
+      metric = Global.new
       metric.collect
 
       expect(metric.sidekiq_processes).not_to eq(nil)

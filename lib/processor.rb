@@ -4,6 +4,11 @@ module ::DiscoursePrometheus
   class Processor
     MAX_PROCESS_METRIC_AGE = 60
 
+    # convenience shortcuts
+    Gauge = ExternalMetric::Gauge
+    Counter = ExternalMetric::Counter
+    Summary = ExternalMetric::Summary
+
     # returns an array of Prometheus metrics
     def self.process(metrics)
       processor = new
@@ -11,9 +16,6 @@ module ::DiscoursePrometheus
       begin
         while true
           metric = metrics.next
-          if String === metric
-            metric = DiscoursePrometheus::Metric.parse(metric)
-          end
           processor.process metric
         end
       rescue StopIteration
@@ -39,13 +41,13 @@ module ::DiscoursePrometheus
     end
 
     def process(metric)
-      if ProcessMetric === metric
+      if InternalMetric::Process === metric
         process_process(metric)
-      elsif Metric === metric
+      elsif InternalMetric::Web === metric
         process_web(metric)
-      elsif JobMetric === metric
+      elsif InternalMetric::Job === metric
         process_job(metric)
-      elsif GlobalMetric === metric
+      elsif InternalMetric::Global === metric
         process_global(metric)
       end
     end
@@ -212,14 +214,14 @@ module ::DiscoursePrometheus
       # this are only calculated when we ask for them on the fly
       return [] if @process_metrics.length == 0
       metrics = []
-      ProcessMetric::GAUGES.each do |key, name|
+      InternalMetric::Process::GAUGES.each do |key, name|
         gauge = Gauge.new(key.to_s, name)
         metrics << gauge
         @process_metrics.each do |metric|
           gauge.observe(metric.send(key), type: metric.type, pid: metric.pid)
         end
       end
-      ProcessMetric::COUNTERS.each do |key, name|
+      InternalMetric::Process::COUNTERS.each do |key, name|
         counter = Counter.new(key.to_s, name)
         metrics << counter
         @process_metrics.each do |metric|

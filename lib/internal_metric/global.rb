@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require 'raindrops'
 
-module DiscoursePrometheus
-  class GlobalMetric
+module DiscoursePrometheus::InternalMetric
+  class Global
 
     attr_reader :postgres_readonly_mode,
       :transient_readonly_mode,

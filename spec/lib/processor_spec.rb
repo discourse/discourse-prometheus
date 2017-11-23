@@ -5,7 +5,7 @@ module DiscoursePrometheus
 
     it "Can handle scheduled job metrics" do
       processor = Processor.new
-      metric = JobMetric.new
+      metric = InternalMetric::Job.new
 
       metric.scheduled = true
       metric.job_name = "Bob"
@@ -23,7 +23,7 @@ module DiscoursePrometheus
 
     it "Can handle process metrics" do
       processor = Processor.new
-      collector = ProcessCollector.new(:web)
+      collector = ProcessReporter.new(:web)
       processor.process(collector.collect)
 
       metrics = processor.prometheus_metrics
@@ -35,7 +35,7 @@ module DiscoursePrometheus
     it "Can pass in via a pipe" do
 
       pipe = BigPipe.new(3)
-      metric = Metric.get(tracked: true, status_code: 200, host: "bob")
+      metric = InternalMetric::Web.get(tracked: true, status_code: 200, host: "bob")
       pipe << metric
       pipe.flush
 
@@ -55,13 +55,13 @@ module DiscoursePrometheus
 
     it "Can count metrics correctly" do
       metrics = []
-      metrics << Metric.get(tracked: true, status_code: 200, db: "bob")
-      metrics << Metric.get(tracked: true, status_code: 200, db: "bob")
-      metrics << Metric.get(tracked: true, logged_in: true, status_code: 200, db: "bill")
-      metrics << Metric.get(tracked: true, mobile: true, status_code: 200, db: "jake")
-      metrics << Metric.get(tracked: false, status_code: 200, db: "bob")
-      metrics << Metric.get(tracked: false, status_code: 300, db: "bob")
-      metrics << Metric.get(tracked: false, background: true, status_code: 300, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, logged_in: true, status_code: 200, db: "bill")
+      metrics << InternalMetric::Web.get(tracked: true, mobile: true, status_code: 200, db: "jake")
+      metrics << InternalMetric::Web.get(tracked: false, status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 300, db: "bob")
 
       processed = Processor.process(metrics.each)
 

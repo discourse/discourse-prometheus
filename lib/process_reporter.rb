@@ -1,6 +1,6 @@
 # collects stats from currently running process
 module DiscoursePrometheus
-  class ProcessCollector
+  class ProcessReporter
     def self.start(collector, type, frequency = 30)
       process_collector = new(type)
       Thread.new do
@@ -22,11 +22,12 @@ module DiscoursePrometheus
     end
 
     def collect
-      metric = ProcessMetric.new
+      metric = InternalMetric::Process.new
       metric.type = @type
       collect_gc_stats(metric)
       collect_v8_stats(metric)
       collect_process_stats(metric)
+      collect_scheduler_stats(metric)
       metric
     end
 
@@ -37,6 +38,10 @@ module DiscoursePrometheus
     def rss
       @pagesize ||= `getconf PAGESIZE`.to_i rescue 4096
       File.read("/proc/#{pid}/statm").split(' ')[1].to_i * @pagesize rescue 0
+    end
+
+    def collect_scheduler_stats(metric)
+      metric.deferred_jobs_queued = Scheduler::Defer.length
     end
 
     def collect_process_stats(metric)

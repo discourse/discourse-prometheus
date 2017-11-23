@@ -3,7 +3,7 @@ require 'socket'
 require 'net/http'
 
 module DiscoursePrometheus
-  describe Server do
+  describe WebServer do
 
     let :available_port do
       port = 8080
@@ -19,11 +19,11 @@ module DiscoursePrometheus
     end
 
     let :collector do
-      MetricCollector.new
+      Collector.new
     end
 
     let :server do
-      Server.new port: available_port, collector: collector
+      WebServer.new port: available_port, collector: collector
     end
 
     after do
@@ -36,7 +36,7 @@ module DiscoursePrometheus
       WebMock.allow_net_connect!
       server.start
 
-      metric = DiscoursePrometheus::Metric.get(tracked: true, status_code: 200, db: "bobsie")
+      metric = InternalMetric::Web.get(tracked: true, status_code: 200, db: "bobsie")
       collector << metric
 
       wait_for do

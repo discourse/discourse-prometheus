@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 module DiscoursePrometheus
-  describe DiscoursePrometheus::Metric do
+  describe ProcessReporter do
     def check_for(metric, *args)
       args.each do |arg|
         expect(metric.send arg).to be > 0
@@ -10,7 +10,7 @@ module DiscoursePrometheus
 
     it "Can collect gc stats" do
       ctx = MiniRacer::Context.new
-      metric = ProcessCollector.new(:web).collect
+      metric = ProcessReporter.new(:web).collect
       ctx.eval("")
 
       expect(metric.type).to eq(:web)

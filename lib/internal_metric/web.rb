@@ -23,6 +23,8 @@ module DiscoursePrometheus::InternalMetric
       mobile
       tracked
       json
+      admin_api
+      user_api
     }
 
     STRING_ATTRS = %w{
@@ -116,6 +118,9 @@ module DiscoursePrometheus::InternalMetric
       else
         metric.db = nil
       end
+
+      metric.admin_api = !!env['_DISCOURSE_API']
+      metric.user_api = !!env['_DISCOURSE_USER_API']
 
       if ad_params = env['action_dispatch.request.parameters']
         metric.controller = ad_params['controller']

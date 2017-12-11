@@ -59,8 +59,8 @@ module DiscoursePrometheus
       metrics << InternalMetric::Web.get(tracked: true, status_code: 200, db: "bob")
       metrics << InternalMetric::Web.get(tracked: true, logged_in: true, status_code: 200, db: "bill")
       metrics << InternalMetric::Web.get(tracked: true, mobile: true, status_code: 200, db: "jake")
-      metrics << InternalMetric::Web.get(tracked: false, status_code: 200, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, status_code: 200, db: "bob", user_api: true)
+      metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob", admin_api: true)
       metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 300, db: "bob")
 
       processed = Processor.process(metrics.each)
@@ -77,11 +77,12 @@ module DiscoursePrometheus
 
       http_requests = processed.find { |m| m.name == "http_requests" }
       expected = {
-        { db: "bob", status: 200, type: "regular" } => 3,
-        { db: "bill", status: 200, type: "regular" } => 1,
-        { db: "jake", status: 200, type: "regular" } => 1,
-        { db: "bob", status: 300, type: "regular" } => 1,
-        { db: "bob", status: "-1", type: "background" } => 1
+        { db: "bob", api: "web", type: "regular", status: 200 } => 2,
+        { db: "bill", api: "web", type: "regular", status: 200 } => 1,
+        { db: "jake", api: "web", type: "regular", status: 200 } => 1,
+        { db: "bob", api: "user", type: "regular", status: 200 } => 1,
+        { db: "bob", api: "admin", type: "regular", status: 300 } => 1,
+        { db: "bob", api: "web", type: "background", status: "-1" } => 1
       }
       expect(http_requests.data).to eq(expected)
     end

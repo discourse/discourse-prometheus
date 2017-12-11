@@ -179,7 +179,16 @@ module ::DiscoursePrometheus
         @page_views.observe(hash)
       end
 
-      hash = { db: db }
+      api_type =
+        if metric.user_api
+          "user"
+        elsif metric.admin_api
+          "admin"
+        else
+          "web"
+        end
+
+      hash = { db: db, api: api_type }
       if metric.background && metric.status_code < 500
         hash[:type] = "background"
         hash[:status] = "-1"

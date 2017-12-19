@@ -32,6 +32,31 @@ module DiscoursePrometheus
       expect(rss.data[type: :web, pid: Process.pid]).to be > 0
     end
 
+    it "Can expire old metrics" do
+      processor = Processor.new
+
+      old_metric = InternalMetric::Process.new
+      old_metric.pid = 100
+      old_metric.rss = 100
+      old_metric.major_gc_count = old_metric.minor_gc_count = old_metric.total_allocated_objects = 0
+      old_metric.created_at = old_metric.created_at - 2000
+
+      processor.process(old_metric)
+
+      new_metric = InternalMetric::Process.new
+      new_metric.pid = 200
+      new_metric.rss = 20
+      new_metric.major_gc_count = new_metric.minor_gc_count = new_metric.total_allocated_objects = 0
+
+      processor.process(new_metric)
+
+      metrics = processor.prometheus_metrics
+      rss = metrics.find { |m| m.name == "rss" }
+
+      expect(rss.data[type: nil, pid: 200]).to be > 0
+      expect(rss.data.length).to eq(1)
+    end
+
     it "Can pass in via a pipe" do
 
       pipe = BigPipe.new(3)

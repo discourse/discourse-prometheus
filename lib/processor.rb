@@ -133,7 +133,7 @@ module ::DiscoursePrometheus
     def process_process(metric)
       now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       @process_metrics.delete_if do |current|
-        metric.pid == current.pid || (metric.created_at + MAX_PROCESS_METRIC_AGE < now)
+        metric.pid == current.pid || (current.created_at + MAX_PROCESS_METRIC_AGE < now)
       end
       @process_metrics << metric
     end

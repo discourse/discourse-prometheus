@@ -1,6 +1,6 @@
 # collects stats from currently running process
-module DiscoursePrometheus
-  class ProcessReporter
+module DiscoursePrometheus::Reporter
+  class Process
     def self.start(collector, type, frequency = 30)
       process_collector = new(type)
       Thread.new do
@@ -22,7 +22,7 @@ module DiscoursePrometheus
     end
 
     def collect
-      metric = InternalMetric::Process.new
+      metric = ::DiscoursePrometheus::InternalMetric::Process.new
       metric.type = @type
       collect_gc_stats(metric)
       collect_v8_stats(metric)
@@ -32,7 +32,7 @@ module DiscoursePrometheus
     end
 
     def pid
-      @pid = Process.pid
+      @pid = ::Process.pid
     end
 
     def rss

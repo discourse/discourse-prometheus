@@ -16,13 +16,6 @@ module DiscoursePrometheus
 
       @collector = collector
       @port = port
-      @global_metrics_collected = false
-
-      # collect globals every 5 seconds
-      # recycle all stats every 30
-      # this happens cause we do a max on queued and active reqs
-      @collect_new_global_seconds = 30
-      @collect_global_seconds = 5
 
       @server.mount_proc '/' do |req, res|
         res['ContentType'] = 'text/plain; charset=utf-8'
@@ -37,25 +30,6 @@ module DiscoursePrometheus
     end
 
     def start
-      @global_collector ||= Thread.start do
-        metrics = InternalMetric::Global.new
-        i = 0
-
-        while true
-          begin
-            # collect new stats every 30 seconds
-            metrics = InternalMetric::Global.new if i % (@collect_new_global_seconds / @collect_global_seconds) == 0
-            i += 1
-            metrics.collect
-            @collector << metrics
-            @global_metrics_collected = true
-          rescue => e
-            STDERR.puts "Error collecting global metrics #{e}"
-            Rails.logger.warn("Error collecting global metrics #{e}") rescue nil
-          end
-          sleep @collect_global_seconds
-        end
-      end
       @runner ||= Thread.start do
         begin
           @server.start
@@ -67,8 +41,6 @@ module DiscoursePrometheus
 
     def stop
       @server.shutdown
-      @global_collector.kill if @global_collector && @global_collector.alive?
-      @global_collector = nil
     end
 
     def metrics

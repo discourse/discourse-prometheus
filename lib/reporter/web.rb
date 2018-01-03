@@ -2,7 +2,7 @@
 #
 require_dependency 'middleware/request_tracker'
 
-class DiscoursePrometheus::WebReporter
+class DiscoursePrometheus::Reporter::Web
 
   attr_reader :collector
 
@@ -21,7 +21,7 @@ class DiscoursePrometheus::WebReporter
     # CAREFUL, we don't want to hoist env into Scheduler::Defer
     # hence the extra method call
     host = RailsMultisite::ConnectionManagement.host(env)
-    log_prom_later(DiscoursePrometheus::InternalMetric::Web.from_env_data(env, data, host))
+    log_prom_later(::DiscoursePrometheus::InternalMetric::Web.from_env_data(env, data, host))
   end
 
   def log_prom_later(message)

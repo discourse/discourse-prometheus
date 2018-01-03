@@ -16,8 +16,9 @@ require_relative("lib/internal_metric/job")
 require_relative("lib/internal_metric/process")
 require_relative("lib/internal_metric/web")
 
-require_relative("lib/web_reporter")
-require_relative("lib/process_reporter")
+require_relative("lib/reporter/process")
+require_relative("lib/reporter/global")
+require_relative("lib/reporter/web")
 
 require_relative("lib/processor")
 require_relative("lib/collector")
@@ -32,7 +33,9 @@ Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 after_initialize do
   $prometheus_collector = DiscoursePrometheus::Collector.new
   DiscoursePrometheus::ExternalMetric::Base.default_prefix = 'discourse_'
-  DiscoursePrometheus::WebReporter.start($prometheus_collector)
+
+  # creates no new threads, this simply adds the instruments
+  DiscoursePrometheus::Reporter::Web.start($prometheus_collector)
 
   if Discourse.running_in_rack?
     Thread.new do
@@ -47,19 +50,21 @@ after_initialize do
         STDERR.puts "Failed to initialize prometheus web server in pid: #{Process.pid} #{e}"
       end
     end
+
+    DiscoursePrometheus::Reporter::Global.start($prometheus_collector)
   end
 
   # in dev we use puma and it runs in a single process
   if Rails.env == "development" && defined?(::Puma)
-    DiscoursePrometheus::ProcessReporter.start($prometheus_collector, :web)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :web)
   end
 
   DiscourseEvent.on(:sidekiq_fork_started) do
-    DiscoursePrometheus::ProcessReporter.start($prometheus_collector, :sidekiq)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :sidekiq)
   end
 
   DiscourseEvent.on(:web_fork_started) do
-    DiscoursePrometheus::ProcessReporter.start($prometheus_collector, :web)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :web)
   end
 
   DiscourseEvent.on(:scheduled_job_ran) do |stat|

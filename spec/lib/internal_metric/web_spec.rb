@@ -4,17 +4,11 @@ module DiscoursePrometheus::InternalMetric
   describe Web do
     it "Can round trip host" do
       metric = Web.get(tracked: true, status_code: 200, host: "bob")
-      metric = Web.parse(metric.to_s)
+      metric = Base.from_h(metric.to_h)
       expect(metric.host).to eq("bob")
     end
 
-    it "can get blank metrics" do
-      10.times do
-        $prometheus_collector.prometheus_metrics_text
-      end
-    end
-
-    it "Can round trip to a string" do
+    it "Can round trip to a hash" do
       metric = Web.new
 
       metric.duration = 0.00074
@@ -29,11 +23,11 @@ module DiscoursePrometheus::InternalMetric
 
       metric.crawler = true
 
-      metric = Web.parse(metric.to_s)
+      metric = Base.from_h(metric.to_h)
 
-      expect(metric.duration).to eq(0.0007)
-      expect(metric.sql_duration).to eq(0.0002)
-      expect(metric.redis_duration).to eq(0.0001)
+      expect(metric.duration).to eq(0.00074)
+      expect(metric.sql_duration).to eq(0.00015)
+      expect(metric.redis_duration).to eq(0.00014)
 
       expect(metric.redis_calls).to eq(2)
       expect(metric.sql_calls).to eq(3)
@@ -42,7 +36,7 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.action).to eq("action")
 
       expect(metric.crawler).to eq(true)
-      expect(metric.tracked).to eq(false)
+      expect(metric.tracked).to eq(nil)
     end
 
     context "from_env_data" do

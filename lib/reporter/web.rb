@@ -4,17 +4,17 @@ require_dependency 'middleware/request_tracker'
 
 class DiscoursePrometheus::Reporter::Web
 
-  attr_reader :collector
+  attr_reader :client
 
-  def self.start(collector)
-    instance = self.new(collector)
+  def self.start(client)
+    instance = self.new(client)
     Middleware::RequestTracker.register_detailed_request_logger(lambda do |env, data|
       instance.report(env, data)
     end)
   end
 
-  def initialize(collector)
-    @collector = collector
+  def initialize(client)
+    @client = client
   end
 
   def report(env, data)
@@ -24,9 +24,9 @@ class DiscoursePrometheus::Reporter::Web
     log_prom_later(::DiscoursePrometheus::InternalMetric::Web.from_env_data(env, data, host))
   end
 
-  def log_prom_later(message)
+  def log_prom_later(metric)
     Scheduler::Defer.later("Prom stats", _db = nil) do
-      @collector << message
+      @client.send metric
     end
   end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module DiscoursePrometheus::InternalMetric
-  class Process
+  class Process < Base
 
     GAUGES = {
       heap_free_slots: "Free ruby heap slots",
@@ -20,7 +20,7 @@ module DiscoursePrometheus::InternalMetric
       total_allocated_objects: "Total number of allocateds objects by process",
     }
 
-    attr_accessor :type,
+    attribute :type,
       :heap_free_slots,
       :heap_live_slots,
       :major_gc_count,

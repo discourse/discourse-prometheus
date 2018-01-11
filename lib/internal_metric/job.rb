@@ -1,3 +1,5 @@
-class DiscoursePrometheus::InternalMetric::Job
-  attr_accessor :job_name, :scheduled, :duration
+module DiscoursePrometheus::InternalMetric
+  class Job < Base
+    attribute :job_name, :scheduled, :duration
+  end
 end

@@ -5,12 +5,12 @@
 
 module ::DiscoursePrometheus; end
 
-require_relative("lib/big_pipe")
-require_relative("lib/external_metric/base")
-require_relative("lib/external_metric/counter")
-require_relative("lib/external_metric/gauge")
-require_relative("lib/external_metric/summary")
+# a bit odd but we need to read this from a version file
+# cause this is loaded from the collector bin
+gem 'prometheus_exporter', File.read(File.expand_path("../prometheus_exporter_version", __FILE__)).strip
+require 'prometheus_exporter/client'
 
+require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")
 require_relative("lib/internal_metric/job")
 require_relative("lib/internal_metric/process")
@@ -20,51 +20,51 @@ require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
 require_relative("lib/reporter/web")
 
-require_relative("lib/processor")
-require_relative("lib/collector")
+require_relative("lib/demon")
 
 require_relative("lib/middleware/metrics")
-require_relative("lib/web_server")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
-  $prometheus_collector = DiscoursePrometheus::Collector.new
-  DiscoursePrometheus::ExternalMetric::Base.default_prefix = 'discourse_'
+  $prometheus_client = PrometheusExporter::Client.new(
+    host: 'localhost',
+    port: GlobalSetting.prometheus_collector_port
+  )
 
   # creates no new threads, this simply adds the instruments
-  DiscoursePrometheus::Reporter::Web.start($prometheus_collector)
+  DiscoursePrometheus::Reporter::Web.start($prometheus_client)
 
+  # happens once per rack application
   if Discourse.running_in_rack?
     Thread.new do
       begin
-        $prometheus_web_server = DiscoursePrometheus::WebServer.new(collector: $prometheus_collector)
-        $prometheus_web_server.start
-      rescue Errno::EADDRINUSE
-        STDERR.puts "Not initializing prometheus web server in pid: #{Process.pid}, port is in use will retry in 10 seconds!"
-        sleep 10
-        retry
+        DiscoursePrometheus::Demon.start
+        while true
+          DiscoursePrometheus::Demon.ensure_running
+          sleep 1
+        end
       rescue => e
-        STDERR.puts "Failed to initialize prometheus web server in pid: #{Process.pid} #{e}"
+        STDERR.puts "Failed to initialize prometheus web server from pid: #{Process.pid} #{e}"
       end
     end
 
-    DiscoursePrometheus::Reporter::Global.start($prometheus_collector)
+    DiscoursePrometheus::Reporter::Global.start($prometheus_client)
   end
 
   # in dev we use puma and it runs in a single process
   if Rails.env == "development" && defined?(::Puma)
-    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :web)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
   end
 
   DiscourseEvent.on(:sidekiq_fork_started) do
-    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :sidekiq)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_client, :sidekiq)
   end
 
   DiscourseEvent.on(:web_fork_started) do
-    DiscoursePrometheus::Reporter::Process.start($prometheus_collector, :web)
+    DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
   end
 
   DiscourseEvent.on(:scheduled_job_ran) do |stat|
@@ -72,7 +72,7 @@ after_initialize do
     metric.scheduled = true
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
-    $prometheus_collector << metric
+    $prometheus_client.send metric.to_h
   end
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|
@@ -80,6 +80,6 @@ after_initialize do
     metric.scheduled = false
     metric.duration = duration
     metric.job_name = worker.class.to_s
-    $prometheus_collector << metric
+    $prometheus_client.send metric.to_h
   end
 end

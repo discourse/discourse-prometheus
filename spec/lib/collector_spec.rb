@@ -1,18 +1,20 @@
 require 'rails_helper'
+require 'prometheus_exporter/server'
+require_relative '../../lib/collector'
 
 module DiscoursePrometheus
-  describe Processor do
+  describe Collector do
 
     it "Can handle scheduled job metrics" do
-      processor = Processor.new
+      collector = Collector.new
       metric = InternalMetric::Job.new
 
       metric.scheduled = true
       metric.job_name = "Bob"
       metric.duration = 1.778
 
-      processor.process(metric)
-      metrics = processor.prometheus_metrics
+      collector.process(metric.to_h)
+      metrics = collector.prometheus_metrics
 
       duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
       count = metrics.find { |m| m.name == "scheduled_job_count" }
@@ -22,18 +24,18 @@ module DiscoursePrometheus
     end
 
     it "Can handle process metrics" do
-      processor = Processor.new
-      collector = ProcessReporter.new(:web)
-      processor.process(collector.collect)
+      collector = Collector.new
+      reporter = Reporter::Process.new(:web)
+      collector.process(reporter.collect.to_h)
 
-      metrics = processor.prometheus_metrics
+      metrics = collector.prometheus_metrics
       rss = metrics.find { |m| m.name == "rss" }
 
       expect(rss.data[type: :web, pid: Process.pid]).to be > 0
     end
 
     it "Can expire old metrics" do
-      processor = Processor.new
+      collector = Collector.new
 
       old_metric = InternalMetric::Process.new
       old_metric.pid = 100
@@ -41,41 +43,20 @@ module DiscoursePrometheus
       old_metric.major_gc_count = old_metric.minor_gc_count = old_metric.total_allocated_objects = 0
       old_metric.created_at = old_metric.created_at - 2000
 
-      processor.process(old_metric)
+      collector.process(old_metric.to_h)
 
       new_metric = InternalMetric::Process.new
       new_metric.pid = 200
       new_metric.rss = 20
       new_metric.major_gc_count = new_metric.minor_gc_count = new_metric.total_allocated_objects = 0
 
-      processor.process(new_metric)
+      collector.process(new_metric.to_h)
 
-      metrics = processor.prometheus_metrics
+      metrics = collector.prometheus_metrics
       rss = metrics.find { |m| m.name == "rss" }
 
       expect(rss.data[type: nil, pid: 200]).to be > 0
       expect(rss.data.length).to eq(1)
-    end
-
-    it "Can pass in via a pipe" do
-
-      pipe = BigPipe.new(3)
-      metric = InternalMetric::Web.get(tracked: true, status_code: 200, host: "bob")
-      pipe << metric
-      pipe.flush
-
-      metrics = Processor.process(pipe.process)
-
-      page_views = metrics.find { |m| m.name == "page_views" }
-      expected = {
-        {
-          type: "anon",
-          device: "desktop",
-          db: "default"
-        } => 1
-      }
-      expect(page_views.data).to eq(expected)
-
     end
 
     it "Can count metrics correctly" do
@@ -88,9 +69,14 @@ module DiscoursePrometheus
       metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob", admin_api: true)
       metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 300, db: "bob")
 
-      processed = Processor.process(metrics.each)
+      collector = Collector.new
+      metrics.each do |metric|
+        collector.process(metric.to_h)
+      end
 
-      page_views = processed.find { |m| m.name == "page_views" }
+      exported = collector.prometheus_metrics
+
+      page_views = exported.find { |m| m.name == "page_views" }
 
       expected = {
         { db: "bob", type: "anon", device: "desktop" } => 2,
@@ -100,7 +86,7 @@ module DiscoursePrometheus
 
       expect(page_views.data).to eq(expected)
 
-      http_requests = processed.find { |m| m.name == "http_requests" }
+      http_requests = exported.find { |m| m.name == "http_requests" }
       expected = {
         { db: "bob", api: "web", type: "regular", status: 200 } => 2,
         { db: "bill", api: "web", type: "regular", status: 200 } => 1,

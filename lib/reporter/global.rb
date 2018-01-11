@@ -1,13 +1,13 @@
 module DiscoursePrometheus::Reporter
   class Global
 
-    def self.start(collector, type)
-      global_collector = new(collector)
+    def self.start(client)
+      global_collector = new
       Thread.new do
         while true
           begin
             metric = global_collector.collect
-            collector << metric
+            client.send metric
           rescue => e
             Rails.logger.warn("Prometheus Discoruse Failed To Collect Global Stats #{e}")
           ensure

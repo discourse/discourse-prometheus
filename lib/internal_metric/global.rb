@@ -3,9 +3,9 @@
 require 'raindrops'
 
 module DiscoursePrometheus::InternalMetric
-  class Global
+  class Global < Base
 
-    attr_reader :postgres_readonly_mode,
+    attribute :postgres_readonly_mode,
       :transient_readonly_mode,
       :redis_master_available,
       :redis_slave_available,

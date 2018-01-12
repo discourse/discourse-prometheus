@@ -26,7 +26,7 @@ class DiscoursePrometheus::Reporter::Web
 
   def log_prom_later(metric)
     Scheduler::Defer.later("Prom stats", _db = nil) do
-      @client.send metric
+      @client.send_json metric
     end
   end
 end

@@ -25,8 +25,9 @@ module ::DiscoursePrometheus
       @global_metrics = []
     end
 
-    def process(metric)
-      metric = DiscoursePrometheus::InternalMetric::Base.from_h(metric)
+    def process(str)
+      obj = JSON.parse(str)
+      metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
       if InternalMetric::Process === metric
         process_process(metric)

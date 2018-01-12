@@ -7,7 +7,7 @@ module DiscoursePrometheus::Reporter
         while true
           begin
             metric = global_collector.collect
-            client.send metric
+            client.send_json metric
           rescue => e
             Rails.logger.warn("Prometheus Discoruse Failed To Collect Global Stats #{e}")
           ensure

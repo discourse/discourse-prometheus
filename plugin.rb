@@ -80,6 +80,6 @@ after_initialize do
     metric.scheduled = false
     metric.duration = duration
     metric.job_name = worker.class.to_s
-    $prometheus_client.send metric.to_h
+    $prometheus_client.send_json metric.to_h
   end
 end

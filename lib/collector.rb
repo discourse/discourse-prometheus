@@ -156,7 +156,7 @@ module ::DiscoursePrometheus
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
 
-      db = metric.db.presence || "default"
+      db = metric.db || "default"
 
       if metric.tracked
         hash = { db: db }

@@ -13,7 +13,7 @@ module DiscoursePrometheus
       metric.job_name = "Bob"
       metric.duration = 1.778
 
-      collector.process(metric.to_h)
+      collector.process(metric.to_h.to_json)
       metrics = collector.prometheus_metrics
 
       duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
@@ -26,12 +26,12 @@ module DiscoursePrometheus
     it "Can handle process metrics" do
       collector = Collector.new
       reporter = Reporter::Process.new(:web)
-      collector.process(reporter.collect.to_h)
+      collector.process(reporter.collect.to_h.to_json)
 
       metrics = collector.prometheus_metrics
       rss = metrics.find { |m| m.name == "rss" }
 
-      expect(rss.data[type: :web, pid: Process.pid]).to be > 0
+      expect(rss.data[type: "web", pid: Process.pid]).to be > 0
     end
 
     it "Can expire old metrics" do
@@ -43,14 +43,14 @@ module DiscoursePrometheus
       old_metric.major_gc_count = old_metric.minor_gc_count = old_metric.total_allocated_objects = 0
       old_metric.created_at = old_metric.created_at - 2000
 
-      collector.process(old_metric.to_h)
+      collector.process(old_metric.to_h.to_json)
 
       new_metric = InternalMetric::Process.new
       new_metric.pid = 200
       new_metric.rss = 20
       new_metric.major_gc_count = new_metric.minor_gc_count = new_metric.total_allocated_objects = 0
 
-      collector.process(new_metric.to_h)
+      collector.process(new_metric.to_h.to_json)
 
       metrics = collector.prometheus_metrics
       rss = metrics.find { |m| m.name == "rss" }
@@ -71,7 +71,7 @@ module DiscoursePrometheus
 
       collector = Collector.new
       metrics.each do |metric|
-        collector.process(metric.to_h)
+        collector.process(metric.to_h.to_json)
       end
 
       exported = collector.prometheus_metrics

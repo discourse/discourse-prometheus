@@ -72,7 +72,7 @@ after_initialize do
     metric.scheduled = true
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
-    $prometheus_client.send metric.to_h
+    $prometheus_client.send_json metric.to_h
   end
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|

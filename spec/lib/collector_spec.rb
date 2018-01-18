@@ -67,7 +67,8 @@ module DiscoursePrometheus
       metrics << InternalMetric::Web.get(tracked: true, mobile: true, status_code: 200, db: "jake")
       metrics << InternalMetric::Web.get(tracked: false, status_code: 200, db: "bob", user_api: true)
       metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob", admin_api: true)
-      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 300, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 418, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 200, db: "bob")
 
       collector = Collector.new
       metrics.each do |metric|
@@ -93,7 +94,8 @@ module DiscoursePrometheus
         { db: "jake", api: "web", type: "regular", status: 200 } => 1,
         { db: "bob", api: "user", type: "regular", status: 200 } => 1,
         { db: "bob", api: "admin", type: "regular", status: 300 } => 1,
-        { db: "bob", api: "web", type: "background", status: "-1" } => 1
+        { db: "bob", api: "web", type: "background", status: "-1" } => 1,
+        { db: "bob", api: "web", type: "background", status: 200 } => 1
       }
       expect(http_requests.data).to eq(expected)
     end

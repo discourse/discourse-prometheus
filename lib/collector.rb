@@ -181,9 +181,14 @@ module ::DiscoursePrometheus
         end
 
       hash = { db: db, api: api_type }
-      if metric.background && metric.status_code < 500
+      if metric.background
         hash[:type] = "background"
-        hash[:status] = "-1"
+        # hijacked but never got the actual status, message bus
+        if metric.status_code == 418
+          hash[:status] = "-1"
+        else
+          hash[:status] = metric.status_code
+        end
       else
         hash[:type] = "regular"
         hash[:status] = metric.status_code

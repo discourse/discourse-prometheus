@@ -47,9 +47,7 @@ module DiscoursePrometheus::InternalMetric
     end
 
     def self.multisite?
-      @multisite ||= (
-        File.exists?(RailsMultisite::ConnectionManagement.config_filename) ? :true : :false
-      ) == :true
+      @multisite ||= Rails.configuration.multisite
     end
 
     def self.from_env_data(env, data, host)

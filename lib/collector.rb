@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ::DiscoursePrometheus
-  class Collector < ::PrometheusExporter::Server::Collector
+  class Collector < ::PrometheusExporter::Server::CollectorBase
     MAX_PROCESS_METRIC_AGE = 60
 
     # convenience shortcuts
@@ -26,7 +26,7 @@ module ::DiscoursePrometheus
     end
 
     def process(str)
-      obj = JSON.parse(str)
+      obj = Oj.compat_load(str)
       metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
       if InternalMetric::Process === metric
@@ -124,6 +124,8 @@ module ::DiscoursePrometheus
 
     def process_process(metric)
       now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      # process clock monotonic is used here so keep collector process time
+      metric.created_at = now
       @process_metrics.delete_if do |current|
         metric.pid == current.pid || (current.created_at + MAX_PROCESS_METRIC_AGE < now)
       end

@@ -39,8 +39,8 @@ module DiscoursePrometheus::InternalMetric
       self
     end
 
-    def to_json
-      to_h.to_json
+    def to_json(*ignore)
+      Oj.dump(to_h, mode: :compat)
     end
 
     def to_h

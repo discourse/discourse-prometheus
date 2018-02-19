@@ -36,7 +36,6 @@ module DiscoursePrometheus::InternalMetric
       :deferred_jobs_queued
 
     def initialize
-      @created_at = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC)
     end
   end
 end

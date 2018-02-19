@@ -41,9 +41,13 @@ module DiscoursePrometheus
       old_metric.pid = 100
       old_metric.rss = 100
       old_metric.major_gc_count = old_metric.minor_gc_count = old_metric.total_allocated_objects = 0
-      old_metric.created_at = old_metric.created_at - 2000
 
       collector.process(old_metric.to_h.to_json)
+
+      # travel forward in time
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      later = now + 61
+      Process.stubs(:clock_gettime).returns(later)
 
       new_metric = InternalMetric::Process.new
       new_metric.pid = 200

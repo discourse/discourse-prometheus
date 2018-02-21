@@ -15,6 +15,7 @@ module ::DiscoursePrometheus
       @http_duration_seconds = nil
       @http_redis_duration_seconds = nil
       @http_sql_duration_seconds = nil
+      @http_net_duration_seconds = nil
 
       @scheduled_job_duration_seconds = nil
       @scheduled_job_count = nil
@@ -139,6 +140,7 @@ module ::DiscoursePrometheus
         @http_duration_seconds = Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
         @http_redis_duration_seconds = Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
         @http_sql_duration_seconds = Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
+        @http_net_duration_seconds = Summary.new("http_net_duration_seconds", "Time spent in external network requests")
       end
     end
 
@@ -157,6 +159,7 @@ module ::DiscoursePrometheus
       @http_duration_seconds.observe(metric.duration, labels)
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
+      @http_net_duration_seconds.observe(metric.net_duration, labels)
 
       db = metric.db || "default"
 
@@ -242,7 +245,8 @@ module ::DiscoursePrometheus
     def web_metrics
       if @page_views
         [@page_views, @http_requests, @http_duration_seconds,
-          @http_redis_duration_seconds, @http_sql_duration_seconds]
+          @http_redis_duration_seconds, @http_sql_duration_seconds,
+          @http_net_duration_seconds]
       else
         []
       end

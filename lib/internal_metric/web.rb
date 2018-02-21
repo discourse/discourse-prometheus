@@ -6,12 +6,14 @@ module DiscoursePrometheus::InternalMetric
     FLOAT_ATTRS = %w{
       duration
       sql_duration
+      net_duration
       redis_duration
     }
 
     INT_ATTRS = %w{
       sql_calls
       redis_calls
+      net_calls
       status_code
     }
 
@@ -83,6 +85,11 @@ module DiscoursePrometheus::InternalMetric
         if redis = timing[:redis]
           metric.redis_duration = redis[:duration]
           metric.redis_calls = redis[:calls]
+        end
+
+        if net = timing[:net]
+          metric.net_duration = net[:duration]
+          metric.net_calls = net[:calls]
         end
       end
 

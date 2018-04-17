@@ -69,7 +69,7 @@ module DiscoursePrometheus::InternalMetric
 
       if queue_start = env['HTTP_X_REQUEST_START']
         queue_start = queue_start.split("t=")[1].to_f
-        metric.queue_duration = (Time.now.to_f - queue_start) / 1000.0
+        metric.queue_duration = (Time.now.to_f - queue_start)
       else
         metric.queue_duration = 0.0
       end

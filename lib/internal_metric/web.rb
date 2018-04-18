@@ -28,6 +28,7 @@ module DiscoursePrometheus::InternalMetric
       json
       admin_api
       user_api
+      forced_anon
     }
 
     STRING_ATTRS = %w{
@@ -112,6 +113,7 @@ module DiscoursePrometheus::InternalMetric
         env["HTTP_ACCEPT"].to_s.include?("application/json")
 
       metric.ajax = env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
+      metric.forced_anon = !!env["DISCOURSE_FORCE_ANON"]
       metric
     end
   end

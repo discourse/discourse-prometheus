@@ -17,6 +17,7 @@ module ::DiscoursePrometheus
       @http_sql_duration_seconds = nil
       @http_net_duration_seconds = nil
       @http_queue_duration_seconds = nil
+      @http_forced_anon_count = nil
 
       @scheduled_job_duration_seconds = nil
       @scheduled_job_count = nil
@@ -138,6 +139,8 @@ module ::DiscoursePrometheus
       unless @page_views
         @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
         @http_requests = Counter.new("http_requests", "Total HTTP requests from web app")
+        @http_forced_anon_count = Counter.new("http_forced_anon_count", "Total count of logged in requests forced into anonymous mode")
+
         @http_duration_seconds = Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
         @http_redis_duration_seconds = Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
         @http_sql_duration_seconds = Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
@@ -201,6 +204,10 @@ module ::DiscoursePrometheus
         hash[:type] = "regular"
         hash[:status] = metric.status_code
       end
+
+      if metric.forced_anon
+        @http_forced_anon_count.observe(1, hash)
+      end
       @http_requests.observe(1, hash)
     end
 
@@ -249,7 +256,9 @@ module ::DiscoursePrometheus
       if @page_views
         [@page_views, @http_requests, @http_duration_seconds,
           @http_redis_duration_seconds, @http_sql_duration_seconds,
-          @http_net_duration_seconds, @http_queue_duration_seconds]
+          @http_net_duration_seconds, @http_queue_duration_seconds,
+          @http_forced_anon_count
+        ]
       else
         []
       end

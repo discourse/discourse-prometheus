@@ -77,10 +77,10 @@ module DiscoursePrometheus::Reporter
     end
 
     def collect_active_record_connections_stat(metric)
-      metrics.active_record_connections_count = 0
+      metric.active_record_connections_count = 0
 
       ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
-        metrics.active_record_connections_count += pool.stat[:connections]
+        metric.active_record_connections_count += pool.stat[:connections]
       end
     end
   end

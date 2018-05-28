@@ -12,6 +12,7 @@ module DiscoursePrometheus::InternalMetric
       v8_heap_count: "Number of V8 contexts running",
       rss: "Total RSS used by process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
+      active_record_connections_count: "Total number of connections in ActiveRecord's connection pools"
     }
 
     COUNTERS = {
@@ -33,7 +34,8 @@ module DiscoursePrometheus::InternalMetric
       :v8_heap_count,
       :pid,
       :created_at,
-      :deferred_jobs_queued
+      :deferred_jobs_queued,
+      :active_record_connections_count
 
     def initialize
     end

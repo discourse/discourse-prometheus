@@ -28,6 +28,7 @@ module DiscoursePrometheus::Reporter
       collect_v8_stats(metric)
       collect_process_stats(metric)
       collect_scheduler_stats(metric)
+      collect_active_record_connections_stat(metric)
       metric
     end
 
@@ -72,6 +73,14 @@ module DiscoursePrometheus::Reporter
           metric.v8_used_heap_size += stats[:used_heap_size].to_i
           metric.v8_physical_size += stats[:total_physical_size].to_i
         end
+      end
+    end
+
+    def collect_active_record_connections_stat(metric)
+      metrics.active_record_connections_count = 0
+
+      ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
+        metrics.active_record_connections_count += pool.stat[:connections]
       end
     end
   end

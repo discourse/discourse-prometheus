@@ -55,7 +55,7 @@ after_initialize do
   end
 
   # in dev we use puma and it runs in a single process
-  if Rails.env == "development" && defined?(::Puma)
+  if Rails.env == "development"
     DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
   end
 

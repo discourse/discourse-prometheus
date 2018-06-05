@@ -19,7 +19,7 @@ module DiscoursePrometheus::Reporter
     end
 
     def initialize(type)
-      @type = type
+      @type = type.to_s
     end
 
     def collect
@@ -77,10 +77,14 @@ module DiscoursePrometheus::Reporter
     end
 
     def collect_active_record_connections_stat(metric)
-      metric.active_record_connections_count = 0
-
       ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
-        metric.active_record_connections_count += pool.stat[:connections]
+        stat = pool.stat
+
+        %i{busy dead idle waiting}.each do |status|
+          key = { status: status.to_s }
+          metric.active_record_connections_count[key] ||= 0
+          metric.active_record_connections_count[key] += stat[status]
+        end
       end
     end
   end

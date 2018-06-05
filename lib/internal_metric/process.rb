@@ -38,6 +38,7 @@ module DiscoursePrometheus::InternalMetric
       :active_record_connections_count
 
     def initialize
+      @active_record_connections_count = {}
     end
   end
 end

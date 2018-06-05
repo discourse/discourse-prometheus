@@ -29,7 +29,7 @@ module ::DiscoursePrometheus
     end
 
     def process(str)
-      obj = Oj.compat_load(str)
+      obj = Oj.load(str)
       metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
       if InternalMetric::Process === metric
@@ -239,7 +239,16 @@ module ::DiscoursePrometheus
         gauge = Gauge.new(key.to_s, name)
         metrics << gauge
         @process_metrics.each do |metric|
-          gauge.observe(metric.send(key), type: metric.type, pid: metric.pid)
+          values = metric.send(key)
+          default_labels = { type: metric.type, pid: metric.pid }
+
+          if values.is_a?(Hash)
+            values.each do |labels, value|
+              gauge.observe(value, default_labels.merge(labels))
+            end
+          else
+            gauge.observe(values, default_labels)
+          end
         end
       end
       InternalMetric::Process::COUNTERS.each do |key, name|

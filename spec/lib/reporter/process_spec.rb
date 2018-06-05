@@ -14,7 +14,8 @@ module DiscoursePrometheus
 
       metric = Reporter::Process.new(:web).collect
 
-      expect(metric.type).to eq(:web)
+      expect(metric.type).to eq('web')
+
       check_for(metric, :heap_live_slots, :heap_free_slots, :major_gc_count,
         :minor_gc_count, :total_allocated_objects, :v8_heap_size,
         :v8_heap_count, :v8_physical_size, :pid, :rss)

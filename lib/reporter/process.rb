@@ -3,20 +3,21 @@ module DiscoursePrometheus::Reporter
   class Process
     def self.start(client, type, frequency = 30)
       process_collector = new(type)
+
       Thread.new do
         while true
           begin
             metric = process_collector.collect
             client.send_json metric
           rescue => e
-            Rails.logger.warn("Prometheus Discoruse Failed To Collect Process Stats #{e}")
+            Rails.logger.warn("Prometheus Discoruse Failed To Collect Process Stats #{e.class} #{e}\n#{e.backtrace.join("\n")}")
           ensure
             sleep frequency
           end
         end
       end
-
     end
+
     def initialize(type)
       @type = type
     end
@@ -48,7 +49,6 @@ module DiscoursePrometheus::Reporter
     def collect_process_stats(metric)
       metric.pid = pid
       metric.rss = rss
-
     end
 
     def collect_gc_stats(metric)

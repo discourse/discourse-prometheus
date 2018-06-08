@@ -78,7 +78,7 @@ module DiscoursePrometheus::Reporter
 
     def collect_active_record_connections_stat(metric)
       ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
-        if pool.connected?
+        if !pool.connections.nil?
           stat = pool.stat
 
           %i{busy dead idle waiting}.each do |status|

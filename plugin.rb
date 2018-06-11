@@ -2,6 +2,7 @@
 # about: prometheus data collector for discourse
 # version: 0.1
 # authors: Sam Saffron
+# url: https://github.com/discourse/discourse-prometheus
 
 module ::DiscoursePrometheus; end
 

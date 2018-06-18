@@ -28,6 +28,7 @@ module DiscoursePrometheus::InternalMetric
       :minor_gc_count,
       :total_allocated_objects,
       :rss,
+      :thread_count,
       :v8_heap_size,
       :v8_used_heap_size,
       :v8_physical_size,

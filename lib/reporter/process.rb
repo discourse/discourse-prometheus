@@ -49,6 +49,7 @@ module DiscoursePrometheus::Reporter
     def collect_process_stats(metric)
       metric.pid = pid
       metric.rss = rss
+      metric.thread_count = Thread.list.count
     end
 
     def collect_gc_stats(metric)

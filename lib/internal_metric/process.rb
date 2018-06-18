@@ -11,6 +11,7 @@ module DiscoursePrometheus::InternalMetric
       v8_physical_size: "Physical size consumed by V8 heaps",
       v8_heap_count: "Number of V8 contexts running",
       rss: "Total RSS used by process",
+      thread_count: "Total number of active threads per process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
       active_record_connections_count: "Total number of connections in ActiveRecord's connection pools"
     }

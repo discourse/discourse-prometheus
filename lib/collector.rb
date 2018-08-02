@@ -96,7 +96,7 @@ module ::DiscoursePrometheus
 
       global_metrics << Gauge.new(
         "sidekiq_processes",
-        "Number of Sidekiq job processors"
+        "Number of Sidekiq job processes"
       )
 
       @global_metrics = global_metrics

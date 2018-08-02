@@ -39,7 +39,18 @@ module DiscoursePrometheus::InternalMetric
       @active_app_reqs = [@active_app_reqs, net_stats.active].max
       @queued_app_reqs = [@queued_app_reqs, net_stats.queued].max
 
-      @sidekiq_jobs_enqueued = (Sidekiq::Stats.new.enqueued) rescue 0
+      @sidekiq_jobs_enqueued = begin
+        stats = {}
+
+        Sidekiq::Stats.new.queues.each do |queue_name, queue_count|
+          stats[{ queue: queue_name }] = queue_count
+        end
+
+        stats
+      rescue
+        0
+      end
+
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
     end
 

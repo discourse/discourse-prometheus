@@ -50,7 +50,15 @@ module ::DiscoursePrometheus
     def process_global(metric)
       ensure_global_metrics
       @global_metrics.each do |gauge|
-        gauge.observe(metric.send gauge.name)
+        values = metric.send(gauge.name)
+
+        if values.is_a?(Hash)
+          values.each do |labels, value|
+            gauge.observe(value, labels)
+          end
+        else
+          gauge.observe(values)
+        end
       end
     end
 

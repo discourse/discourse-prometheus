@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'raindrops'
+require 'sidekiq/api'
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base
@@ -47,8 +48,6 @@ module DiscoursePrometheus::InternalMetric
         end
 
         stats
-      rescue
-        0
       end
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0

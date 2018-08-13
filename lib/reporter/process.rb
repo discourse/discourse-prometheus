@@ -10,7 +10,7 @@ module DiscoursePrometheus::Reporter
             metric = process_collector.collect
             client.send_json metric
           rescue => e
-            Rails.logger.warn("Prometheus Discoruse Failed To Collect Process Stats #{e.class} #{e}\n#{e.backtrace.join("\n")}")
+            Rails.logger.warn("Prometheus Discourse Failed To Collect Process Stats #{e.class} #{e}\n#{e.backtrace.join("\n")}")
           ensure
             sleep frequency
           end

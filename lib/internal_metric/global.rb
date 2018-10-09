@@ -18,15 +18,17 @@ module DiscoursePrometheus::InternalMetric
     def initialize
       @active_app_reqs = 0
       @queued_app_reqs = 0
+
+      @fault_logged = {}
     end
 
     def collect
       redis_config = GlobalSetting.redis_config
-      redis_master_running = test_redis(redis_config[:host], redis_config[:port], redis_config[:password])
+      redis_master_running = test_redis(:master, redis_config[:host], redis_config[:port], redis_config[:password])
       redis_slave_running = 0
 
       if redis_config[:slave_host]
-        redis_slave_running = test_redis(redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
+        redis_slave_running = test_redis(:slave, redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
       end
 
       net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
@@ -56,16 +58,37 @@ module DiscoursePrometheus::InternalMetric
     private
 
     def primary_site_readonly?
-      return 1 unless defined?(Discourse::PG_READONLY_MODE_KEY)
-      $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}") ? 1 : 0
+      fault_log_key = :primary_site_readonly
+
+      unless defined?(Discourse::PG_READONLY_MODE_KEY)
+        conditionally_log_fault(fault_log_key, "Declared primary site read-only due to Discourse::PG_READONLY_MODE_KEY not being defined")
+        return 1
+      end
+      if $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
+        conditionally_log_fault(fault_log_key, "Declared primary site read-only due to default:#{Discourse::PG_READONLY_MODE_KEY} being set")
+        1
+      else
+        clear_fault_log(fault_log_key)
+        0
+      end
     rescue
+      clear_fault_log(fault_log_key)
       0
     end
 
-    def test_redis(host, port, password)
+    def test_redis(role, host, port, password)
+      fault_log_key = :"test_redis_#{role}"
+
       test_connection = Redis.new(host: host, port: port, password: password)
-      test_connection.ping == "PONG" ? 1 : 0
-    rescue
+      if test_connection.ping == "PONG"
+        clear_fault_log(fault_log_key)
+        1
+      else
+        conditionally_log_fault(fault_log_key, "Declared Redis #{role} down because PING/PONG failed")
+        0
+      end
+    rescue => ex
+      conditionally_log_fault(fault_log_key, (["Declared Redis #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
       0
     ensure
       test_connection.close rescue nil
@@ -83,6 +106,17 @@ module DiscoursePrometheus::InternalMetric
     rescue
       # no db
       0
+    end
+
+    def conditionally_log_fault(key, msg)
+      unless @fault_logged[key]
+        Rails.logger.error(msg)
+        @fault_logged[key] = true
+      end
+    end
+
+    def clear_fault_log(key)
+      @fault_logged[key] = false
     end
   end
 end

@@ -5,6 +5,48 @@ require_relative '../../lib/collector'
 module DiscoursePrometheus
   describe Collector do
 
+    it "Can process custom metrics" do
+      collector = Collector.new
+
+      collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "counter",
+          "description": "some description",
+          "value": 2,
+          "type": "Counter"
+        }
+      METRIC
+
+      collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "counter",
+          "description": "some description",
+          "type": "Counter"
+        }
+      METRIC
+
+      collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "gauge",
+          "labels": { "test": "super" },
+          "description": "some description",
+          "value": 122.1,
+          "type": "Gauge"
+        }
+      METRIC
+
+      metrics = collector.prometheus_metrics
+
+      counter = metrics.find { |m| m.name == "counter" }
+      gauge = metrics.find { |m| m.name == "gauge" }
+
+      expect(gauge.data).to eq({ "test" => "super" } => 122.1)
+      expect(counter.data).to eq(nil => 3)
+    end
+
     it "Can handle scheduled job metrics" do
       collector = Collector.new
       metric = InternalMetric::Job.new

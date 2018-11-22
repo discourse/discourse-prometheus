@@ -23,6 +23,8 @@ module DiscoursePrometheus::InternalMetric
           Web
         when "Process"
           Process
+        when "Custom"
+          Custom
         else
           raise "class deserialization not implemented"
         end

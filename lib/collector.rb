@@ -26,6 +26,8 @@ module ::DiscoursePrometheus
 
       @process_metrics = []
       @global_metrics = []
+
+      @custom_metrics = nil
     end
 
     def process(str)
@@ -40,11 +42,38 @@ module ::DiscoursePrometheus
         process_job(metric)
       elsif InternalMetric::Global === metric
         process_global(metric)
+      elsif InternalMetric::Custom === metric
+        process_custom(metric)
       end
     end
 
     def prometheus_metrics_text
       prometheus_metrics.map(&:to_prometheus_text).join("\n")
+    end
+
+    def process_custom(metric)
+      obj = ensure_custom_metric(metric)
+      if Counter === obj
+        obj.observe(metric.value || 1, metric.labels)
+      elsif Gauge === obj
+        obj.observe(metric.value, metric.labels)
+      end
+    end
+
+    def ensure_custom_metric(metric)
+      @custom_metrics ||= {}
+      if !(obj = @custom_metrics[metric.name])
+        if metric.type == "Counter"
+          obj = Counter.new(metric.name, metric.description)
+        elsif metric.type == "Gauge"
+          obj = Gauge.new(metric.name, metric.description)
+        else
+          raise ApplicationError, "Unknown metric type #{metric.type}"
+        end
+        @custom_metrics[metric.name] = obj
+      end
+
+      obj
     end
 
     def process_global(metric)
@@ -220,7 +249,11 @@ module ::DiscoursePrometheus
     end
 
     def prometheus_metrics
-      web_metrics + process_metrics + job_metrics + @global_metrics
+      metrics = web_metrics + process_metrics + job_metrics + @global_metrics
+      if @custom_metrics
+        metrics += @custom_metrics.values
+      end
+      metrics
     end
 
     private

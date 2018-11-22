@@ -16,6 +16,7 @@ require_relative("lib/internal_metric/global")
 require_relative("lib/internal_metric/job")
 require_relative("lib/internal_metric/process")
 require_relative("lib/internal_metric/web")
+require_relative("lib/internal_metric/custom")
 
 require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
@@ -53,11 +54,11 @@ after_initialize do
     end
 
     DiscoursePrometheus::Reporter::Global.start($prometheus_client)
-  end
 
-  # in dev we use puma and it runs in a single process
-  if Rails.env == "development"
-    DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
+    # in dev we may use puma and it runs in a single process
+    if Rails.env == "development"
+      DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
+    end
   end
 
   DiscourseEvent.on(:sidekiq_fork_started) do

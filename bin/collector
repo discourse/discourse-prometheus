@@ -18,6 +18,7 @@ require_relative '../lib/internal_metric/global'
 require_relative '../lib/internal_metric/job'
 require_relative '../lib/internal_metric/process'
 require_relative '../lib/internal_metric/web'
+require_relative '../lib/internal_metric/custom'
 require_relative '../lib/collector'
 
 $port = ARGV[0].to_i

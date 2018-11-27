@@ -10,6 +10,8 @@ module DiscoursePrometheus::InternalMetric
       :transient_readonly_mode,
       :redis_master_available,
       :redis_slave_available,
+      :postgresql_master_available,
+      :postgresql_replica_available,
       :active_app_reqs,
       :queued_app_reqs,
       :sidekiq_jobs_enqueued,
@@ -27,6 +29,9 @@ module DiscoursePrometheus::InternalMetric
       redis_master_running = test_redis(:master, redis_config[:host], redis_config[:port], redis_config[:password])
       redis_slave_running = 0
 
+      postgresql_master_running = test_postgresql(master: true)
+      postgresql_replica_running = test_postgresql(master: false)
+
       if redis_config[:slave_host]
         redis_slave_running = test_redis(:slave, redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
       end
@@ -37,6 +42,8 @@ module DiscoursePrometheus::InternalMetric
       @transient_readonly_mode = recently_readonly?
       @redis_master_available = redis_master_running
       @redis_slave_available = redis_slave_running
+      @postgresql_master_available = postgresql_master_running
+      @postgresql_replica_available = postgresql_replica_running
 
       # active and queued are special metrics that track max
       @active_app_reqs = [@active_app_reqs, net_stats.active].max
@@ -76,6 +83,22 @@ module DiscoursePrometheus::InternalMetric
       0
     end
 
+    def test_postgresql(master: true)
+      config = ActiveRecord::Base.connection_config
+
+      if !master
+        config = config.dup.merge(
+          host: config[:replica_host],
+          port: config[:replica_port]
+        )
+      end
+
+      connection = ActiveRecord::Base.postgresql_connection(config)
+      connection.active? ? 1 : 0
+    ensure
+      connection&.disconnect!
+    end
+
     def test_redis(role, host, port, password)
       fault_log_key = :"test_redis_#{role}"
 
@@ -91,7 +114,7 @@ module DiscoursePrometheus::InternalMetric
       conditionally_log_fault(fault_log_key, (["Declared Redis #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
       0
     ensure
-      test_connection.close rescue nil
+      test_connection&.close
     end
 
     def recently_readonly?

@@ -117,6 +117,16 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
+        "postgresql_master_available",
+        "Whether or not we have an active connection to the master PostgreSQL"
+      )
+
+      global_metrics << Gauge.new(
+        "postgresql_replica_available",
+        "Whether or not we have an active connection to the replica PostgreSQL"
+      )
+
+      global_metrics << Gauge.new(
         "active_app_reqs",
         "Number of active web requests in progress"
       )

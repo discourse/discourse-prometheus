@@ -86,15 +86,23 @@ module DiscoursePrometheus::InternalMetric
     def test_postgresql(master: true)
       config = ActiveRecord::Base.connection_config
 
-      if !master
-        config = config.dup.merge(
-          host: config[:replica_host],
-          port: config[:replica_port]
-        )
+      unless master
+        if config[:replica_host]
+          config = config.dup.merge(
+            host: config[:replica_host],
+            port: config[:replica_port]
+          )
+        else
+          return 0
+        end
       end
 
       connection = ActiveRecord::Base.postgresql_connection(config)
       connection.active? ? 1 : 0
+    rescue => ex
+      role = master ? 'master' : 'replica'
+      conditionally_log_fault(:"test_postgresql_#{role}", (["Declared PostgreSQL #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
+      0
     ensure
       connection&.disconnect!
     end

@@ -7,8 +7,8 @@ module DiscoursePrometheus::InternalMetric
       metric.collect
 
       expect(metric.sidekiq_processes).not_to eq(nil)
-      expect(metric.postgresql_master_available).to eq(1)
-      expect(metric.postgresql_replica_available).to eq(0)
+      expect(metric.postgres_master_available).to eq(1)
+      expect(metric.postgres_replica_available).to eq(0)
     end
 
     describe 'when a replica has been configured' do
@@ -32,8 +32,8 @@ module DiscoursePrometheus::InternalMetric
         metric = Global.new
         metric.collect
 
-        expect(metric.postgresql_master_available).to eq(1)
-        expect(metric.postgresql_replica_available).to eq(0)
+        expect(metric.postgres_master_available).to eq(1)
+        expect(metric.postgres_replica_available).to eq(0)
         expect(@fake_logger.errors.first).to match(/Connection refused/)
       end
     end

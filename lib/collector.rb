@@ -117,12 +117,12 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "postgresql_master_available",
+        "postgres_master_available",
         "Whether or not we have an active connection to the master PostgreSQL"
       )
 
       global_metrics << Gauge.new(
-        "postgresql_replica_available",
+        "postgres_replica_available",
         "Whether or not we have an active connection to the replica PostgreSQL"
       )
 

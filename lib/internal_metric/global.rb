@@ -10,8 +10,8 @@ module DiscoursePrometheus::InternalMetric
       :transient_readonly_mode,
       :redis_master_available,
       :redis_slave_available,
-      :postgresql_master_available,
-      :postgresql_replica_available,
+      :postgres_master_available,
+      :postgres_replica_available,
       :active_app_reqs,
       :queued_app_reqs,
       :sidekiq_jobs_enqueued,
@@ -29,8 +29,8 @@ module DiscoursePrometheus::InternalMetric
       redis_master_running = test_redis(:master, redis_config[:host], redis_config[:port], redis_config[:password])
       redis_slave_running = 0
 
-      postgresql_master_running = test_postgresql(master: true)
-      postgresql_replica_running = test_postgresql(master: false)
+      postgres_master_running = test_postgres(master: true)
+      postgres_replica_running = test_postgres(master: false)
 
       if redis_config[:slave_host]
         redis_slave_running = test_redis(:slave, redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
@@ -42,8 +42,8 @@ module DiscoursePrometheus::InternalMetric
       @transient_readonly_mode = recently_readonly?
       @redis_master_available = redis_master_running
       @redis_slave_available = redis_slave_running
-      @postgresql_master_available = postgresql_master_running
-      @postgresql_replica_available = postgresql_replica_running
+      @postgres_master_available = postgres_master_running
+      @postgres_replica_available = postgres_replica_running
 
       # active and queued are special metrics that track max
       @active_app_reqs = [@active_app_reqs, net_stats.active].max
@@ -83,7 +83,7 @@ module DiscoursePrometheus::InternalMetric
       0
     end
 
-    def test_postgresql(master: true)
+    def test_postgres(master: true)
       config = ActiveRecord::Base.connection_config
 
       unless master
@@ -101,7 +101,7 @@ module DiscoursePrometheus::InternalMetric
       connection.active? ? 1 : 0
     rescue => ex
       role = master ? 'master' : 'replica'
-      conditionally_log_fault(:"test_postgresql_#{role}", (["Declared PostgreSQL #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
+      conditionally_log_fault(:"test_postgres_#{role}", (["Declared PostgreSQL #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
       0
     ensure
       connection&.disconnect!

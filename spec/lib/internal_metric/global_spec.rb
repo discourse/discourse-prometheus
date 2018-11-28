@@ -8,7 +8,7 @@ module DiscoursePrometheus::InternalMetric
 
       expect(metric.sidekiq_processes).not_to eq(nil)
       expect(metric.postgres_master_available).to eq(1)
-      expect(metric.postgres_replica_available).to eq(0)
+      expect(metric.postgres_replica_available).to eq(nil)
     end
 
     describe 'when a replica has been configured' do

@@ -93,7 +93,7 @@ module DiscoursePrometheus::InternalMetric
             port: config[:replica_port]
           )
         else
-          return 0
+          return nil
         end
       end
 

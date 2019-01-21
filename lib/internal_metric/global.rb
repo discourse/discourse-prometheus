@@ -68,18 +68,14 @@ module DiscoursePrometheus::InternalMetric
       fault_log_key = :primary_site_readonly
 
       unless defined?(Discourse::PG_READONLY_MODE_KEY)
-        conditionally_log_fault(fault_log_key, "Declared primary site read-only due to Discourse::PG_READONLY_MODE_KEY not being defined")
         return 1
       end
       if $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
-        conditionally_log_fault(fault_log_key, "Declared primary site read-only due to default:#{Discourse::PG_READONLY_MODE_KEY} being set")
         1
       else
-        clear_fault_log(fault_log_key)
         0
       end
     rescue
-      clear_fault_log(fault_log_key)
       0
     end
 
@@ -101,7 +97,6 @@ module DiscoursePrometheus::InternalMetric
       connection.active? ? 1 : 0
     rescue => ex
       role = master ? 'master' : 'replica'
-      conditionally_log_fault(:"test_postgres_#{role}", (["Declared PostgreSQL #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
       0
     ensure
       connection&.disconnect!
@@ -112,14 +107,11 @@ module DiscoursePrometheus::InternalMetric
 
       test_connection = Redis.new(host: host, port: port, password: password)
       if test_connection.ping == "PONG"
-        clear_fault_log(fault_log_key)
         1
       else
-        conditionally_log_fault(fault_log_key, "Declared Redis #{role} down because PING/PONG failed")
         0
       end
     rescue => ex
-      conditionally_log_fault(fault_log_key, (["Declared Redis #{role} down due to exception: #{ex.message} (#{ex.class})"] + ex.backtrace).join("\n  "))
       0
     ensure
       test_connection&.close
@@ -131,23 +123,11 @@ module DiscoursePrometheus::InternalMetric
       RailsMultisite::ConnectionManagement.with_connection('default') do
         recently_readonly = 1 if Discourse.recently_readonly?
       end
-      ActiveRecord::Base.connection_handler.clear_active_connections!
 
       recently_readonly
     rescue
       # no db
       0
-    end
-
-    def conditionally_log_fault(key, msg)
-      unless @fault_logged[key]
-        Rails.logger.error(msg)
-        @fault_logged[key] = true
-      end
-    end
-
-    def clear_fault_log(key)
-      @fault_logged[key] = false
     end
   end
 end

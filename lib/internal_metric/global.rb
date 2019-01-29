@@ -15,7 +15,8 @@ module DiscoursePrometheus::InternalMetric
       :active_app_reqs,
       :queued_app_reqs,
       :sidekiq_jobs_enqueued,
-      :sidekiq_processes
+      :sidekiq_processes,
+      :sidekiq_paused
 
     def initialize
       @active_app_reqs = 0
@@ -60,6 +61,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
+      @sidekiq_paused = Sidekiq.paused? ? 1 : 0
     end
 
     private

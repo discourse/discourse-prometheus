@@ -146,6 +146,11 @@ module ::DiscoursePrometheus
         "Number of Sidekiq job processes"
       )
 
+      global_metrics << Gauge.new(
+        "sidekiq_paused",
+        "Whether or not Sidekiq is paused"
+      )
+
       @global_metrics = global_metrics
     end
 

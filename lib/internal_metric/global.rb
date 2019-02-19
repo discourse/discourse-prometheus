@@ -61,7 +61,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
-      @sidekiq_paused = Sidekiq.paused? ? 1 : 0
+      @sidekiq_paused = sidekiq_paused_states
     end
 
     private
@@ -130,6 +130,16 @@ module DiscoursePrometheus::InternalMetric
     rescue
       # no db
       0
+    end
+
+    def sidekiq_paused_states
+      paused = {}
+
+      RailsMultisite::ConnectionManagement.each_connection do |db|
+        paused[{ db: db }] = Sidekiq.paused? ? 1 : nil
+      end
+
+      paused
     end
   end
 end

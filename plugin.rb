@@ -77,11 +77,11 @@ after_initialize do
     $prometheus_client.send_json metric.to_h
 
     if stat.name == "Jobs::EnsurePostUploadsExistence"
-      name = Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS
       metric = DiscoursePrometheus::InternalMetric::Custom.new
-      metric.name = "Missing post uploads"
-      metric.value = PostCustomField.where(name: name).count
-      metric.labels = { name: name }
+      metric.type = "Gauge"
+      metric.name = "missing_post_uploads"
+      metric.description = "Number of missing uploads in all posts"
+      metric.value = PostCustomField.where(name: Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS).count
       $prometheus_client.send_json metric.to_h
     end
   end

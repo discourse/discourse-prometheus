@@ -76,13 +76,21 @@ after_initialize do
     metric.duration = stat.duration_ms * 0.001
     $prometheus_client.send_json metric.to_h
 
-    if stat.name == "Jobs::EnsurePostUploadsExistence"
-      metric = DiscoursePrometheus::InternalMetric::Custom.new
-      metric.type = "Gauge"
-      metric.name = "missing_post_uploads"
-      metric.description = "Number of missing uploads in all posts"
-      metric.value = PostCustomField.where(name: Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS).count
-      $prometheus_client.send_json metric.to_h
+    case stat.name
+    when "Jobs::EnsurePostUploadsExistence"
+      count = PostCustomField.where(name: Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS).count
+      $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
+        "missing_post_uploads",
+        "Number of missing uploads in all posts",
+        count
+      )
+    when "Jobs::EnsureS3UploadsExistence"
+      count = ($redis.get("missing_s3_uploads") || "-1").to_i
+      $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
+        "missing_s3_uploads",
+        "Number of missing uploads in S3",
+        count
+      )
     end
   end
 

@@ -75,6 +75,15 @@ after_initialize do
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
     $prometheus_client.send_json metric.to_h
+
+    if stat.name == "Jobs::EnsurePostUploadsExistence"
+      name = Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS
+      metric = DiscoursePrometheus::InternalMetric::Custom.new
+      metric.name = "Missing post uploads"
+      metric.value = PostCustomField.where(name: name).count
+      metric.labels = { name: name }
+      $prometheus_client.send_json metric.to_h
+    end
   end
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|

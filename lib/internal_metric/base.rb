@@ -61,6 +61,8 @@ module DiscoursePrometheus::InternalMetric
           "Web"
         when Process
           "Process"
+        when Custom
+          "Custom"
         else
           raise "not implemented"
         end

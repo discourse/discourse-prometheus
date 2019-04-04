@@ -78,7 +78,7 @@ after_initialize do
 
     case stat.name
     when "Jobs::EnsurePostUploadsExistence"
-      count = PostCustomField.where(name: Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS).count
+      count = PostCustomField.where(name: Jobs::EnsurePostUploadsExistence::MISSING_UPLOADS).where.not(value: nil).count
       $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
         "missing_post_uploads",
         "Number of missing uploads in all posts",

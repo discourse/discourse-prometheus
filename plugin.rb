@@ -85,7 +85,7 @@ after_initialize do
         count
       )
     when "Jobs::EnsureS3UploadsExistence"
-      count = ($redis.get("missing_s3_uploads") || "-1").to_i
+      count = Discourse.stats.get("missing_s3_uploads") || -1
       $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
         "missing_s3_uploads",
         "Number of missing uploads in S3",

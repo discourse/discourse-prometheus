@@ -111,14 +111,14 @@ module DiscoursePrometheus
 
     it "Can count metrics correctly" do
       metrics = []
-      metrics << InternalMetric::Web.get(tracked: true, status_code: 200, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: true, status_code: 200, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: true, logged_in: true, status_code: 200, db: "bill")
-      metrics << InternalMetric::Web.get(tracked: true, mobile: true, status_code: 200, db: "jake")
-      metrics << InternalMetric::Web.get(tracked: false, status_code: 200, db: "bob", user_api: true)
-      metrics << InternalMetric::Web.get(tracked: false, status_code: 300, db: "bob", admin_api: true)
-      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 418, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: false, background: true, status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", logged_in: true, status_code: 200, db: "bill")
+      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", mobile: true, status_code: 200, db: "jake")
+      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", status_code: 200, db: "bob", user_api: true)
+      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", status_code: 300, db: "bob", admin_api: true)
+      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", background: true, status_code: 418, db: "bob")
+      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", background: true, status_code: 200, db: "bob")
 
       collector = Collector.new
       metrics.each do |metric|
@@ -139,13 +139,13 @@ module DiscoursePrometheus
 
       http_requests = exported.find { |m| m.name == "http_requests" }
       expected = {
-        { db: "bob", api: "web", type: "regular", status: 200 } => 2,
-        { db: "bill", api: "web", type: "regular", status: 200 } => 1,
-        { db: "jake", api: "web", type: "regular", status: 200 } => 1,
-        { db: "bob", api: "user", type: "regular", status: 200 } => 1,
-        { db: "bob", api: "admin", type: "regular", status: 300 } => 1,
-        { db: "bob", api: "web", type: "background", status: "-1" } => 1,
-        { db: "bob", api: "web", type: "background", status: 200 } => 1
+        { db: "bob", api: "web", verb: "GET", type: "regular", status: 200 } => 2,
+        { db: "bill", api: "web", verb: "GET", type: "regular", status: 200 } => 1,
+        { db: "jake", api: "web", verb: "GET", type: "regular", status: 200 } => 1,
+        { db: "bob", api: "user", verb: "GET", type: "regular", status: 200 } => 1,
+        { db: "bob", api: "admin", verb: "GET", type: "regular", status: 300 } => 1,
+        { db: "bob", api: "web", verb: "GET", type: "background", status: "-1" } => 1,
+        { db: "bob", api: "web", verb: "GET", type: "background", status: 200 } => 1
       }
       expect(http_requests.data).to eq(expected)
     end

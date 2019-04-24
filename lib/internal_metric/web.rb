@@ -32,6 +32,7 @@ module DiscoursePrometheus::InternalMetric
     }
 
     STRING_ATTRS = %w{
+      verb
       controller
       action
       host
@@ -41,6 +42,8 @@ module DiscoursePrometheus::InternalMetric
     (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each do |attr|
       attribute attr
     end
+
+    ALLOWED_REQUEST_METHODS = Set["HEAD", "GET", "PUT", "POST", "DELETE"]
 
     def self.get(hash)
       metric = new
@@ -76,6 +79,9 @@ module DiscoursePrometheus::InternalMetric
 
       metric.admin_api = !!env['_DISCOURSE_API']
       metric.user_api = !!env['_DISCOURSE_USER_API']
+
+      metric.verb = env['REQUEST_METHOD']
+      metric.verb = 'OTHER' if !ALLOWED_REQUEST_METHODS.include?(metric.verb)
 
       if ad_params = env['action_dispatch.request.parameters']
         metric.controller = ad_params['controller']

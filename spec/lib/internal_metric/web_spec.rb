@@ -102,6 +102,24 @@ module DiscoursePrometheus::InternalMetric
         expect(metric.json).to eq(true)
       end
 
+      it "Can detect request method" do
+        env = {
+          "REQUEST_METHOD" => "GET"
+        }
+
+        metric = Web.from_env_data(env, {}, "")
+
+        expect(metric.verb).to eq("GET")
+
+        env = {
+          "REQUEST_METHOD" => "TEST"
+        }
+
+        metric = Web.from_env_data(env, {}, "")
+
+        expect(metric.verb).to eq("OTHER")
+      end
+
       it "Can fish out timings if available" do
         data = {
           timing: {

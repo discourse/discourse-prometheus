@@ -243,7 +243,7 @@ module ::DiscoursePrometheus
           "web"
         end
 
-      hash = { db: db, api: api_type }
+      hash = { db: db, api: api_type, verb: metric.verb }
       if metric.background
         hash[:type] = "background"
         # hijacked but never got the actual status, message bus

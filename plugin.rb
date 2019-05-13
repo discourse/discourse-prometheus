@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # name: discourse-prometheus
 # about: prometheus data collector for discourse
 # version: 0.1

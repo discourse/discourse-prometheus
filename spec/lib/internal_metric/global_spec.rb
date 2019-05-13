@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 module DiscoursePrometheus::InternalMetric
@@ -20,16 +22,16 @@ module DiscoursePrometheus::InternalMetric
         metric = Global.new
         metric.collect
 
-        expect(metric.sidekiq_paused).to eq({
-          {db: RailsMultisite::ConnectionManagement.current_db} => nil
-        })
+        expect(metric.sidekiq_paused).to eq(
+          { db: RailsMultisite::ConnectionManagement.current_db } => nil
+        )
 
         Sidekiq.pause!
         metric.collect
 
-        expect(metric.sidekiq_paused).to eq({
-          {db: RailsMultisite::ConnectionManagement.current_db} => 1
-        })
+        expect(metric.sidekiq_paused).to eq(
+          { db: RailsMultisite::ConnectionManagement.current_db } => 1
+        )
       end
     end
 

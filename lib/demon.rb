@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_dependency 'demon/base'
 
 class DiscoursePrometheus::Demon < Demon::Base

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # collects stats from currently running process
 module DiscoursePrometheus::Reporter
   class Process

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 require 'prometheus_exporter/server'
 require_relative '../../lib/collector'

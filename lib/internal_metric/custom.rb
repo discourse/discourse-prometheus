@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module DiscoursePrometheus::InternalMetric
   class Custom < Base
     attribute :name , :labels, :description, :value, :type

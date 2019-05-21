@@ -151,7 +151,7 @@ module DiscoursePrometheus::InternalMetric
       missing = {}
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
-        missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads") || 0
+        missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
       end
 
       missing

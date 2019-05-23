@@ -4,6 +4,8 @@ require 'rails_helper'
 
 module DiscoursePrometheus::InternalMetric
   describe Global do
+    let(:db) { RailsMultisite::ConnectionManagement.current_db }
+
     it "can collect global metrics" do
       metric = Global.new
       metric.collect
@@ -11,6 +13,21 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.sidekiq_processes).not_to eq(nil)
       expect(metric.postgres_master_available).to eq(1)
       expect(metric.postgres_replica_available).to eq(nil)
+    end
+
+    it "should collect the missing upload metrics" do
+      Discourse.stats.set("missing_s3_uploads", 2)
+      Discourse.stats.set("missing_post_uploads", 1)
+
+      metric = Global.new
+      metric.collect
+
+      expect(metric.missing_s3_uploads).to eq({
+        { db: db } => 2
+      })
+      expect(metric.missing_post_uploads).to eq({
+        { db: db } => 1
+      })
     end
 
     describe 'sidekiq paused' do
@@ -23,14 +40,14 @@ module DiscoursePrometheus::InternalMetric
         metric.collect
 
         expect(metric.sidekiq_paused).to eq(
-          { db: RailsMultisite::ConnectionManagement.current_db } => nil
+          { db: db } => nil
         )
 
         Sidekiq.pause!
         metric.collect
 
         expect(metric.sidekiq_paused).to eq(
-          { db: RailsMultisite::ConnectionManagement.current_db } => 1
+          { db: db } => 1
         )
       end
     end

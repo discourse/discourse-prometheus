@@ -77,19 +77,6 @@ after_initialize do
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
     $prometheus_client.send_json metric.to_h
-
-    if stat.name == "Jobs::EnsureS3UploadsExistence"
-      $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
-        "missing_s3_uploads",
-        "Number of missing uploads in S3",
-        Discourse.stats.get("missing_s3_uploads") || 0
-      )
-      $prometheus_client.send_json DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(
-        "missing_post_uploads",
-        "Number of missing post uploads",
-        Discourse.stats.get("missing_post_uploads") || 0
-      )
-    end
   end
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|

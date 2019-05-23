@@ -16,7 +16,9 @@ module DiscoursePrometheus::InternalMetric
       :queued_app_reqs,
       :sidekiq_jobs_enqueued,
       :sidekiq_processes,
-      :sidekiq_paused
+      :sidekiq_paused,
+      :missing_post_uploads,
+      :missing_s3_uploads
 
     def initialize
       @active_app_reqs = 0
@@ -62,6 +64,9 @@ module DiscoursePrometheus::InternalMetric
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
       @sidekiq_paused = sidekiq_paused_states
+
+      @missing_s3_uploads = missing_uploads("s3")
+      @missing_post_uploads = missing_uploads("post")
     end
 
     private
@@ -140,6 +145,16 @@ module DiscoursePrometheus::InternalMetric
       end
 
       paused
+    end
+
+    def missing_uploads(type)
+      missing = {}
+
+      RailsMultisite::ConnectionManagement.each_connection do |db|
+        missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
+      end
+
+      missing
     end
   end
 end

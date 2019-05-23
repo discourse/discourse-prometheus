@@ -24,6 +24,9 @@ module ::DiscoursePrometheus
       @sidekiq_job_duration_seconds = nil
       @sidekiq_job_count = nil
 
+      @missing_s3_uploads = nil
+      @missing_post_uploads = nil
+
       @process_metrics = []
       @global_metrics = []
 
@@ -149,6 +152,16 @@ module ::DiscoursePrometheus
       global_metrics << Gauge.new(
         "sidekiq_paused",
         "Whether or not Sidekiq is paused"
+      )
+
+      global_metrics << Gauge.new(
+        "missing_s3_uploads",
+        "Number of missing uploads in S3"
+      )
+
+      global_metrics << Gauge.new(
+        "missing_post_uploads",
+        "Number of missing post uploads"
       )
 
       @global_metrics = global_metrics

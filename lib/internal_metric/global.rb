@@ -148,15 +148,15 @@ module DiscoursePrometheus::InternalMetric
     end
 
     def missing_uploads(type)
-      if Discourse.respond_to?(:stats)
-        missing = {}
+      missing = {}
 
+      if Discourse.respond_to?(:stats)
         RailsMultisite::ConnectionManagement.each_connection do |db|
           missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
         end
-
-        missing
       end
+
+      missing
     end
   end
 end

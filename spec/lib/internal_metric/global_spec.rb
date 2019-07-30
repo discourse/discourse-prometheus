@@ -22,12 +22,12 @@ module DiscoursePrometheus::InternalMetric
       metric = Global.new
       metric.collect
 
-      expect(metric.missing_s3_uploads).to eq({
+      expect(metric.missing_s3_uploads).to eq(
         { db: db } => 2
-      })
-      expect(metric.missing_post_uploads).to eq({
+      )
+      expect(metric.missing_post_uploads).to eq(
         { db: db } => 1
-      })
+      )
     end
 
     describe 'sidekiq paused' do

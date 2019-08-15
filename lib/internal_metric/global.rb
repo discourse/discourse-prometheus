@@ -72,9 +72,7 @@ module DiscoursePrometheus::InternalMetric
     private
 
     def primary_site_readonly?
-      fault_log_key = :primary_site_readonly
-
-      unless defined?(Discourse::PG_READONLY_MODE_KEY)
+      if !defined?(Discourse::PG_READONLY_MODE_KEY)
         return 1
       end
       if $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
@@ -102,23 +100,20 @@ module DiscoursePrometheus::InternalMetric
 
       connection = ActiveRecord::Base.postgresql_connection(config)
       connection.active? ? 1 : 0
-    rescue => ex
-      role = master ? 'master' : 'replica'
+    rescue
       0
     ensure
       connection&.disconnect!
     end
 
     def test_redis(role, host, port, password)
-      fault_log_key = :"test_redis_#{role}"
-
       test_connection = Redis.new(host: host, port: port, password: password)
       if test_connection.ping == "PONG"
         1
       else
         0
       end
-    rescue => ex
+    rescue
       0
     ensure
       test_connection&.close
@@ -151,8 +146,12 @@ module DiscoursePrometheus::InternalMetric
       missing = {}
 
       if Discourse.respond_to?(:stats)
-        RailsMultisite::ConnectionManagement.each_connection do |db|
-          missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
+        begin
+          RailsMultisite::ConnectionManagement.each_connection do |db|
+            missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
+          end
+        rescue => e
+          Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
         end
       end
 

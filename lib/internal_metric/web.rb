@@ -37,6 +37,7 @@ module DiscoursePrometheus::InternalMetric
       action
       host
       db
+      cache
     }
 
     (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each do |attr|
@@ -113,6 +114,7 @@ module DiscoursePrometheus::InternalMetric
       metric.background = !!data[:is_background]
       metric.mobile = !!data[:is_mobile]
       metric.tracked = !!data[:track_view]
+      metric.cache = data[:cache]
       metric.host = host
 
       metric.json = env["PATH_INFO"].to_s.ends_with?(".json") ||
@@ -120,6 +122,7 @@ module DiscoursePrometheus::InternalMetric
 
       metric.ajax = env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
       metric.forced_anon = !!env["DISCOURSE_FORCE_ANON"]
+
       metric
     end
   end

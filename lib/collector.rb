@@ -213,6 +213,9 @@ module ::DiscoursePrometheus
         @http_queue_duration_seconds = Summary.new("http_queue_duration_seconds", "Time spent queueing requests between NGINX and Ruby")
 
         @http_sql_calls_per_request = Gauge.new("http_sql_calls_per_request", "How many SQL statements ran per request")
+
+        @http_anon_cache_store = Counter.new("http_anon_cache_store", "How many a payload is stored in redis for anonymous cache")
+        @http_anon_cache_hit = Counter.new("http_anon_cache_hit", "How many a payload from redis is used for anonymous cache")
       end
     end
 
@@ -233,10 +236,17 @@ module ::DiscoursePrometheus
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
       @http_net_duration_seconds.observe(metric.net_duration, labels)
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
-
       @http_sql_calls_per_request.observe(metric.sql_calls, labels.merge(logged_in: metric.logged_in))
 
       db = metric.db || "default"
+
+      if cache = metric.cache
+        if cache == "store"
+          @http_anon_cache_store.observe(1, labels.merge(db: db))
+        elsif cache == "true"
+          @http_anon_cache_hit.observe(1, labels.merge(db: db))
+        end
+      end
 
       if metric.tracked
         hash = { db: db }
@@ -339,7 +349,8 @@ module ::DiscoursePrometheus
         [@page_views, @http_requests, @http_duration_seconds,
           @http_redis_duration_seconds, @http_sql_duration_seconds,
           @http_net_duration_seconds, @http_queue_duration_seconds,
-          @http_forced_anon_count, @http_sql_calls_per_request
+          @http_forced_anon_count, @http_sql_calls_per_request,
+          @http_anon_cache_store, @http_anon_cache_hit
         ]
       else
         []

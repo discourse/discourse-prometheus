@@ -238,15 +238,15 @@ module ::DiscoursePrometheus
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
       @http_sql_calls_per_request.observe(metric.sql_calls, labels.merge(logged_in: metric.logged_in))
 
-      db = metric.db || "default"
-
       if cache = metric.cache
         if cache == "store"
-          @http_anon_cache_store.observe(1, labels.merge(db: db))
+          @http_anon_cache_store.observe(1, labels)
         elsif cache == "true"
-          @http_anon_cache_hit.observe(1, labels.merge(db: db))
+          @http_anon_cache_hit.observe(1, labels)
         end
       end
+
+      db = metric.db || "default"
 
       if metric.tracked
         hash = { db: db }

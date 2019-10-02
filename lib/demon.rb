@@ -1,14 +1,8 @@
 # frozen_string_literal: true
+#
+require_dependency 'demon/base'
 
-if Rails.autoloaders.main.class == Zeitwerk::Loader
-  require_dependency 'demon/demon_base'
-else
-  require_dependency 'demon/base'
-end
-
-base_class = Rails.autoloaders.main.class == Zeitwerk::Loader ? Demon::DemonBase : Demon::Base
-
-class DiscoursePrometheus::Demon < base_class
+class DiscoursePrometheus::Demon < ::Demon::Base
   def self.prefix
     "prometheus-demon"
   end

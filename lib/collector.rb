@@ -83,6 +83,9 @@ module ::DiscoursePrometheus
       ensure_global_metrics
       @global_metrics.each do |gauge|
         values = metric.send(gauge.name)
+        # global metrics "reset" each time they are called
+        # this will delete labels we don't need anymore
+        gauge.reset!
 
         if values.is_a?(Hash)
           values.each do |labels, value|

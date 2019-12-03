@@ -75,7 +75,7 @@ module DiscoursePrometheus::InternalMetric
       if !defined?(Discourse::PG_READONLY_MODE_KEY)
         return 1
       end
-      if $redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
+      if Discourse.redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
         1
       else
         0

@@ -2,5 +2,7 @@ inherit_from: https://raw.githubusercontent.com/discourse/discourse/master/.rubo
 
 Style/GlobalVars:
   AllowedVariables: [
-    $prometheus_client
+    $prometheus_client,
+    $parent_pid,
+    $port
   ]

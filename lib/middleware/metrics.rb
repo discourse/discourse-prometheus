@@ -23,9 +23,10 @@ module DiscoursePrometheus
     PRIVATE_IP = /^(127\.)|(192\.168\.)|(10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(::1$)|([fF][cCdD])/
 
     def is_private_ip?(env)
+      trusted_ip = Regexp.new GlobalSettings.trusted_ip
       request = Rack::Request.new(env)
       ip = IPAddr.new(request.ip) rescue nil
-      !!(ip && ip.to_s =~ PRIVATE_IP)
+      !!((ip && ip.to_s =~ PRIVATE_IP) || (ip && ip.to_s =~ trusted_ip))
     end
 
     def is_admin?(env)

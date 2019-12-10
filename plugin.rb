@@ -29,6 +29,7 @@ require_relative("lib/demon")
 require_relative("lib/middleware/metrics")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
+GlobalSetting.add_default :trusted_ip, ''
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 

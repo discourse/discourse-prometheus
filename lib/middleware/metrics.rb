@@ -23,10 +23,16 @@ module DiscoursePrometheus
     PRIVATE_IP = /^(127\.)|(192\.168\.)|(10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(::1$)|([fF][cCdD])/
 
     def is_private_ip?(env)
-      trusted_ip = Regexp.new GlobalSetting.trusted_ip
       request = Rack::Request.new(env)
       ip = IPAddr.new(request.ip) rescue nil
-      !!((ip && ip.to_s =~ PRIVATE_IP) || (ip && ip.to_s =~ trusted_ip))
+      !!(ip && ip.to_s =~ PRIVATE_IP)
+    end
+
+    def is_trusted_ip?(env)
+      trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex rescue nil
+      request = Rack::Request.new(env)
+      ip = IPAddr.new(request.ip) rescue nil
+      !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end
 
     def is_admin?(env)
@@ -40,7 +46,7 @@ module DiscoursePrometheus
 
     def intercept?(env)
       if env["PATH_INFO"] == "/metrics"
-        return is_private_ip?(env) || is_admin?(env)
+        return is_private_ip?(env) || is_admin?(env) || is_trusted_ip?(env)
       end
       false
     end

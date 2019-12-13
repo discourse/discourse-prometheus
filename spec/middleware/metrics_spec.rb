@@ -9,8 +9,13 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     ::DiscoursePrometheus::Middleware::Metrics.new(app)
   end
 
-  it "will allow for trusted IP" do
+  it "will allow for trusted IP with prometheus_trusted_ip_whitelist_regex" do
     GlobalSetting.prometheus_trusted_ip_whitelist_regex = '^(200\.1)'
+    status, = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '200.0.1.1', "rack.input" => StringIO.new)
+    expect(status).to eq(200)
+  end
+
+  it "will 404 for unauthed if prometheus_trusted_ip_whitelist_regex is nil" do
     status, = middleware.call("PATH_INFO" => '/metrics', "REMOTE_ADDR" => '200.0.1.1', "rack.input" => StringIO.new)
     expect(status).to eq(404)
   end

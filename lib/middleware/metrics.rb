@@ -29,10 +29,11 @@ module DiscoursePrometheus
     end
 
     def is_trusted_ip?(env)
+      debugger
+      return nil unless GlobalSetting.prometheus_trusted_ip_whitelist_regex.length > 0
       trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex if GlobalSetting.prometheus_trusted_ip_whitelist_regex
       request = Rack::Request.new(env)
       ip = IPAddr.new(request.ip) rescue nil
-      debugger
       puts "IP: #{ip}, r: #{trusted_ip_regex}"
       !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end

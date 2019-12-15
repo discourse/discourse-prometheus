@@ -73,5 +73,4 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(headers["Content-Type"]).to eq('text/plain; charset=utf-8')
     expect(body).to include('hello world')
   end
-
 end

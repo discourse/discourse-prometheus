@@ -74,5 +74,4 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(body).to include('hello world')
   end
 
-
 end

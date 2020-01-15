@@ -34,7 +34,7 @@ module ::DiscoursePrometheus
     end
 
     def process(str)
-      obj = Oj.load(str)
+      obj = Oj.load(str, mode: :object)
       metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
       if InternalMetric::Process === metric

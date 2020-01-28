@@ -167,6 +167,11 @@ module ::DiscoursePrometheus
         "Number of missing post uploads"
       )
 
+      global_metrics << Gauge.new(
+        "version",
+        "Revision number of discourse starting from HEAD"
+      )
+
       @global_metrics = global_metrics
     end
 

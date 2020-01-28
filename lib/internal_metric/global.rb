@@ -18,13 +18,18 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_processes,
       :sidekiq_paused,
       :missing_post_uploads,
-      :missing_s3_uploads
+      :missing_s3_uploads,
+      :version
 
     def initialize
       @active_app_reqs = 0
       @queued_app_reqs = 0
-
       @fault_logged = {}
+      begin
+        @version = `git rev-list --count HEAD`.to_i
+      rescue
+        @version = 0
+      end
     end
 
     def collect

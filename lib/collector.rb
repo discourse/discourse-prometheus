@@ -158,6 +158,11 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
+        "sidekiq_oldest_running_job",
+        "Start timestamp for the oldest running sidekiq job"
+      )
+
+      global_metrics << Gauge.new(
         "missing_s3_uploads",
         "Number of missing uploads in S3"
       )

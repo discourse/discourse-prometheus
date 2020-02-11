@@ -17,6 +17,7 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_jobs_enqueued,
       :sidekiq_processes,
       :sidekiq_paused,
+      :sidekiq_oldest_running_job,
       :missing_post_uploads,
       :missing_s3_uploads,
       :version
@@ -66,6 +67,8 @@ module DiscoursePrometheus::InternalMetric
 
         stats
       end
+
+      @sidekiq_oldest_running_job = Sidekiq::Workers.new.map { |_, _, w| w["run_at"] }.min
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
       @sidekiq_paused = sidekiq_paused_states

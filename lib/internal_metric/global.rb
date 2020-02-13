@@ -5,6 +5,7 @@ require 'sidekiq/api'
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base
+    STUCK_JOB_DURATION = 1.hour
 
     attribute :postgres_readonly_mode,
       :transient_readonly_mode,
@@ -17,7 +18,8 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_jobs_enqueued,
       :sidekiq_processes,
       :sidekiq_paused,
-      :sidekiq_oldest_running_job,
+      :sidekiq_workers,
+      :sidekiq_stuck_workers,
       :missing_post_uploads,
       :missing_s3_uploads,
       :version
@@ -68,7 +70,8 @@ module DiscoursePrometheus::InternalMetric
         stats
       end
 
-      @sidekiq_oldest_running_job = Sidekiq::Workers.new.map { |_, _, w| w["run_at"] }.min
+      @sidekiq_workers = Sidekiq::ProcessSet.new.sum { |p| p["concurrency"] }
+      @sidekiq_stuck_workers = Sidekiq::Workers.new.filter { |_, _, w| Time.at(w["run_at"]) < STUCK_JOB_DURATION.ago }.count
 
       @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
       @sidekiq_paused = sidekiq_paused_states

@@ -158,8 +158,13 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "sidekiq_oldest_running_job",
-        "Start timestamp for the oldest running sidekiq job"
+        "sidekiq_workers",
+        "Total number of active sidekiq workers"
+      )
+
+      global_metrics << Gauge.new(
+        "sidekiq_stuck_workers",
+        "Number of workers which have been running the same job for more than 1 hour"
       )
 
       global_metrics << Gauge.new(

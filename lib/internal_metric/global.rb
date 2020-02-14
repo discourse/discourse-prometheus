@@ -6,15 +6,6 @@ require 'sidekiq/api'
 module DiscoursePrometheus::InternalMetric
   class Global < Base
 
-    def self.hostname
-      @hostname ||=
-        begin
-          Discourse::Utils.execute_command("hostname").strip
-        rescue
-          "Unknown"
-        end
-    end
-
     STUCK_JOB_MINUTES = 60
 
     attribute :postgres_readonly_mode,
@@ -82,7 +73,7 @@ module DiscoursePrometheus::InternalMetric
 
       @sidekiq_processes = 0
       @sidekiq_workers = Sidekiq::ProcessSet.new.sum do |process|
-        if process["hostname"] == Global.hostname
+        if process["hostname"] == ::DiscoursePrometheus.hostname
           @sidekiq_processes += 1
           process["concurrency"]
         else
@@ -91,7 +82,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @sidekiq_stuck_workers = Sidekiq::Workers.new.filter do |queue, _, w|
-        queue.start_with?(Global.hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
+        queue.start_with?(::DiscoursePrometheus.hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
       end.count
 
       @sidekiq_paused = sidekiq_paused_states

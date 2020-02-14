@@ -80,14 +80,20 @@ module DiscoursePrometheus::InternalMetric
         stats
       end
 
-      # not correct, should be per machine
-      @sidekiq_workers = Sidekiq::ProcessSet.new.sum { |p| p["concurrency"] }
+      @sidekiq_processes = 0
+      @sidekiq_workers = Sidekiq::ProcessSet.new.sum do |process|
+        if process["hostname"] == Global.hostname
+          @sidekiq_processes += 1
+          process["concurrency"]
+        else
+          0
+        end
+      end
 
       @sidekiq_stuck_workers = Sidekiq::Workers.new.filter do |queue, _, w|
         queue.start_with?(Global.hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
       end.count
 
-      @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
       @sidekiq_paused = sidekiq_paused_states
 
       @missing_s3_uploads = missing_uploads("s3")

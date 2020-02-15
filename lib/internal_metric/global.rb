@@ -71,9 +71,11 @@ module DiscoursePrometheus::InternalMetric
         stats
       end
 
+      hostname = ::PrometheusExporter.hostname
+
       @sidekiq_processes = 0
       @sidekiq_workers = Sidekiq::ProcessSet.new.sum do |process|
-        if process["hostname"] == ::DiscoursePrometheus.hostname
+        if process["hostname"] == hostname
           @sidekiq_processes += 1
           process["concurrency"]
         else
@@ -82,7 +84,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @sidekiq_stuck_workers = Sidekiq::Workers.new.filter do |queue, _, w|
-        queue.start_with?(::DiscoursePrometheus.hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
+        queue.start_with?(hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
       end.count
 
       @sidekiq_paused = sidekiq_paused_states

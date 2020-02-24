@@ -32,7 +32,8 @@ module DiscoursePrometheus
       host = RailsMultisite::ConnectionManagement.host(env)
       result = false
       RailsMultisite::ConnectionManagement.with_hostname(host) do
-        result = !!CurrentUser.lookup_from_env(env)&.admin
+        result = RailsMultisite::ConnectionManagement.current_db == "default"
+        result &&= !!CurrentUser.lookup_from_env(env)&.admin
       end
       result
     end

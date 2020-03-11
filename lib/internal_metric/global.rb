@@ -159,8 +159,12 @@ module DiscoursePrometheus::InternalMetric
     def sidekiq_paused_states
       paused = {}
 
-      RailsMultisite::ConnectionManagement.each_connection do |db|
-        paused[{ db: db }] = Sidekiq.paused? ? 1 : nil
+      begin
+        RailsMultisite::ConnectionManagement.each_connection do |db|
+          paused[{ db: db }] = Sidekiq.paused? ? 1 : nil
+        end
+      rescue => e
+        Discourse.warn_exception(e, message: "Failed to connect to redis to collect paused status")
       end
 
       paused

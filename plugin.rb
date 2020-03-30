@@ -40,7 +40,7 @@ after_initialize do
   )
 
   # creates no new threads, this simply adds the instruments
-  DiscoursePrometheus::Reporter::Web.start($prometheus_client)
+  DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
 
   # happens once per rack application
   if Discourse.running_in_rack?
@@ -77,7 +77,7 @@ after_initialize do
     metric.scheduled = true
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
-    $prometheus_client.send_json metric.to_h
+    $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 
   DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|
@@ -85,6 +85,6 @@ after_initialize do
     metric.scheduled = false
     metric.duration = duration
     metric.job_name = worker.class.to_s
-    $prometheus_client.send_json metric.to_h
+    $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 end

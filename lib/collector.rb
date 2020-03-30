@@ -34,7 +34,7 @@ module ::DiscoursePrometheus
     end
 
     def process(str)
-      obj = Oj.load(str)
+      obj = Oj.load(str, mode: :object)
       metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
       if InternalMetric::Process === metric
@@ -158,6 +158,16 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
+        "sidekiq_workers",
+        "Total number of active sidekiq workers"
+      )
+
+      global_metrics << Gauge.new(
+        "sidekiq_stuck_workers",
+        "Number of workers which have been running the same job for more than 1 hour"
+      )
+
+      global_metrics << Gauge.new(
         "missing_s3_uploads",
         "Number of missing uploads in S3"
       )
@@ -165,6 +175,11 @@ module ::DiscoursePrometheus
       global_metrics << Gauge.new(
         "missing_post_uploads",
         "Number of missing post uploads"
+      )
+
+      global_metrics << Gauge.new(
+        "version",
+        "Revision number of discourse starting from HEAD"
       )
 
       @global_metrics = global_metrics

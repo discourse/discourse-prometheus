@@ -6,6 +6,8 @@ require 'sidekiq/api'
 module DiscoursePrometheus::InternalMetric
   class Global < Base
 
+    STUCK_JOB_MINUTES = 60
+
     attribute :postgres_readonly_mode,
       :transient_readonly_mode,
       :redis_master_available,
@@ -17,14 +19,21 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_jobs_enqueued,
       :sidekiq_processes,
       :sidekiq_paused,
+      :sidekiq_workers,
+      :sidekiq_stuck_workers,
       :missing_post_uploads,
-      :missing_s3_uploads
+      :missing_s3_uploads,
+      :version
 
     def initialize
       @active_app_reqs = 0
       @queued_app_reqs = 0
-
       @fault_logged = {}
+      begin
+        @version = `git rev-list --count HEAD`.to_i
+      rescue
+        @version = 0
+      end
     end
 
     def collect
@@ -62,7 +71,22 @@ module DiscoursePrometheus::InternalMetric
         stats
       end
 
-      @sidekiq_processes = (Sidekiq::ProcessSet.new.size || 0) rescue 0
+      hostname = ::PrometheusExporter.hostname
+
+      @sidekiq_processes = 0
+      @sidekiq_workers = Sidekiq::ProcessSet.new.sum do |process|
+        if process["hostname"] == hostname
+          @sidekiq_processes += 1
+          process["concurrency"]
+        else
+          0
+        end
+      end
+
+      @sidekiq_stuck_workers = Sidekiq::Workers.new.filter do |queue, _, w|
+        queue.start_with?(hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
+      end.count
+
       @sidekiq_paused = sidekiq_paused_states
 
       @missing_s3_uploads = missing_uploads("s3")
@@ -135,8 +159,12 @@ module DiscoursePrometheus::InternalMetric
     def sidekiq_paused_states
       paused = {}
 
-      RailsMultisite::ConnectionManagement.each_connection do |db|
-        paused[{ db: db }] = Sidekiq.paused? ? 1 : nil
+      begin
+        RailsMultisite::ConnectionManagement.each_connection do |db|
+          paused[{ db: db }] = Sidekiq.paused? ? 1 : nil
+        end
+      rescue => e
+        Discourse.warn_exception(e, message: "Failed to connect to redis to collect paused status")
       end
 
       paused

@@ -29,14 +29,14 @@ module DiscoursePrometheus
     end
 
     def is_trusted_ip?(env)
-      if GlobalSetting.prometheus_trusted_ip_whitelist_regex.length == 0
-        false
-      else
-        trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex rescue false
+      return false if GlobalSetting.prometheus_trusted_ip_whitelist_regex.empty?
+      begin
+        trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex
         request = Rack::Request.new(env)
-        ip = IPAddr.new(request.ip) rescue false
-        !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
+        ip = IPAddr.new(request.ip)
+      rescue false
       end
+      !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end
 
     def is_admin?(env)

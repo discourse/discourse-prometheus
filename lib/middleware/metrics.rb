@@ -34,7 +34,8 @@ module DiscoursePrometheus
         trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex
         request = Rack::Request.new(env)
         ip = IPAddr.new(request.ip)
-      rescue false
+      rescue
+        false
       end
       !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end
@@ -59,9 +60,9 @@ module DiscoursePrometheus
     def metrics(env)
       data = Net::HTTP.get(URI("http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics"))
       [200, {
-        "Content-Type" => "text/plain; charset=utf-8",
-        "Content-Length" => data.bytesize.to_s
-      }, [data]]
+         "Content-Type" => "text/plain; charset=utf-8",
+         "Content-Length" => data.bytesize.to_s
+       }, [data]]
     end
 
   end

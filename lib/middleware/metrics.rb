@@ -24,8 +24,20 @@ module DiscoursePrometheus
 
     def is_private_ip?(env)
       request = Rack::Request.new(env)
-      ip = IPAddr.new(request.ip) rescue nil
+      ip = IPAddr.new(request.ip) rescue false
       !!(ip && ip.to_s =~ PRIVATE_IP)
+    end
+
+    def is_trusted_ip?(env)
+      return false if GlobalSetting.prometheus_trusted_ip_whitelist_regex.empty?
+      begin
+        trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex
+        request = Rack::Request.new(env)
+        ip = IPAddr.new(request.ip)
+      rescue
+        false
+      end
+      !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end
 
     def is_admin?(env)
@@ -40,7 +52,7 @@ module DiscoursePrometheus
 
     def intercept?(env)
       if env["PATH_INFO"] == "/metrics"
-        return is_private_ip?(env) || is_admin?(env)
+        return is_private_ip?(env) || is_trusted_ip?(env) || is_admin?(env)
       end
       false
     end
@@ -48,9 +60,9 @@ module DiscoursePrometheus
     def metrics(env)
       data = Net::HTTP.get(URI("http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics"))
       [200, {
-        "Content-Type" => "text/plain; charset=utf-8",
-        "Content-Length" => data.bytesize.to_s
-      }, [data]]
+         "Content-Type" => "text/plain; charset=utf-8",
+         "Content-Length" => data.bytesize.to_s
+       }, [data]]
     end
 
   end

@@ -24,7 +24,7 @@ module DiscoursePrometheus
 
     def is_private_ip?(env)
       request = Rack::Request.new(env)
-      ip = IPAddr.new(request.ip) rescue false
+      ip = IPAddr.new(request.ip) rescue nil
       !!(ip && ip.to_s =~ PRIVATE_IP)
     end
 
@@ -34,8 +34,9 @@ module DiscoursePrometheus
         trusted_ip_regex = Regexp.new GlobalSetting.prometheus_trusted_ip_whitelist_regex
         request = Rack::Request.new(env)
         ip = IPAddr.new(request.ip)
-      rescue
-        false
+      rescue => e
+        # failed to parse regex
+        Discourse.warn_exception(e, message: "Error parsing prometheus trusted ip whitelist", env: env)
       end
       !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end

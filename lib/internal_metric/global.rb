@@ -29,11 +29,14 @@ module DiscoursePrometheus::InternalMetric
       @active_app_reqs = 0
       @queued_app_reqs = 0
       @fault_logged = {}
+
       begin
-        @version = `git rev-list --count HEAD`.to_i
+        @@version ||= `git rev-list --count HEAD`.to_i
       rescue
-        @version = 0
+        @@version = 0
       end
+
+      @version = @@version
     end
 
     def collect

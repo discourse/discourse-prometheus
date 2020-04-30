@@ -32,7 +32,8 @@ module DiscoursePrometheus::InternalMetric
 
       begin
         @@version ||= `git rev-list --count HEAD`.to_i
-      rescue
+      rescue => e
+        Discourse.warn_exception(e, message: "Failed to calculate discourse_version metric")
         @@version = 0
       end
 

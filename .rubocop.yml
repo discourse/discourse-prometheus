@@ -1,8 +1,5 @@
-inherit_from: https://raw.githubusercontent.com/discourse/discourse/master/.rubocop.yml
+inherit_gem:
+  rubocop-discourse: default.yml
 
 Style/GlobalVars:
-  AllowedVariables: [
-    $prometheus_client,
-    $parent_pid,
-    $port
-  ]
+  AllowedVariables: [$prometheus_client, $parent_pid, $port]

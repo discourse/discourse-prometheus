@@ -6,7 +6,7 @@ require 'sidekiq/api'
 module DiscoursePrometheus::InternalMetric
   class Global < Base
 
-    STUCK_JOB_MINUTES = 60
+    STUCK_JOB_MINUTES = 120
 
     attribute :postgres_readonly_mode,
       :transient_readonly_mode,

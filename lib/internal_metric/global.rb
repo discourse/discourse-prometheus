@@ -52,7 +52,7 @@ module DiscoursePrometheus::InternalMetric
         redis_slave_running = test_redis(:slave, redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
       end
 
-      net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
+      net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"] unless RbConfig::CONFIG["arch"] =~ /darwin/
 
       @postgres_readonly_mode = primary_site_readonly?
       @transient_readonly_mode = recently_readonly?
@@ -62,8 +62,8 @@ module DiscoursePrometheus::InternalMetric
       @postgres_replica_available = postgres_replica_running
 
       # active and queued are special metrics that track max
-      @active_app_reqs = [@active_app_reqs, net_stats.active].max
-      @queued_app_reqs = [@queued_app_reqs, net_stats.queued].max
+      @active_app_reqs = [@active_app_reqs, net_stats.active].max if net_stats
+      @queued_app_reqs = [@queued_app_reqs, net_stats.queued].max if net_stats
 
       @sidekiq_jobs_enqueued = begin
         stats = {}

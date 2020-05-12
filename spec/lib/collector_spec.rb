@@ -68,6 +68,7 @@ module DiscoursePrometheus
     end
 
     it "Can handle process metrics" do
+      skip("skipped because /proc does not exist on macOS") if RbConfig::CONFIG["arch"] =~ /darwin/
       collector = Collector.new
       reporter = Reporter::Process.new(:web)
       collector.process(reporter.collect.to_json)

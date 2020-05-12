@@ -6,6 +6,7 @@ module DiscoursePrometheus
   describe Reporter::Process do
     def check_for(metric, *args)
       args.each do |arg|
+        next if arg == :rss && RbConfig::CONFIG["arch"] =~ /darwin/ # macos does not support these metrics
         expect(metric.send arg).to be > 0
       end
     end

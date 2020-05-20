@@ -48,8 +48,11 @@ module DiscoursePrometheus::InternalMetric
       postgres_master_running = test_postgres(master: true)
       postgres_replica_running = test_postgres(master: false)
 
-      if redis_config[:slave_host]
-        redis_slave_running = test_redis(:slave, redis_config[:slave_host], redis_config[:slave_port], redis_config[:password])
+      redis_slave_host = redis_config[:slave_host] || redis_config[:replica_host]
+      redis_slave_port = redis_config[:slave_port] || redis_config[:replica_port]
+
+      if redis_slave_host
+        redis_slave_running = test_redis(:slave, redis_slave_host, redis_slave_port, redis_config[:password])
       end
 
       net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"] unless RbConfig::CONFIG["arch"] =~ /darwin/

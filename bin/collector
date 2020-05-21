@@ -11,6 +11,7 @@ require 'thread'
 require 'oj'
 require 'prometheus_exporter'
 require 'prometheus_exporter/server'
+require 'rbtrace' if ENV['RBTRACE'] == "1"
 
 module DiscoursePrometheus; end
 

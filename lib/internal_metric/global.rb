@@ -31,13 +31,17 @@ module DiscoursePrometheus::InternalMetric
       @fault_logged = {}
 
       begin
-        @@version ||= `git rev-list --count HEAD`.to_i
+        @@version ||= Discourse::Utils.execute_command("git rev-list --count HEAD").to_i
       rescue => e
         Discourse.warn_exception(e, message: "Failed to calculate discourse_version metric")
-        @@version = 0
+        @@retries ||= 10
+        @@retries -= 1
+        if @@retries < 0
+          @@version = -1
+        end
       end
 
-      @version = @@version
+      @version = @@version || -2
     end
 
     def collect

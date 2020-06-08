@@ -190,7 +190,7 @@ module DiscoursePrometheus::InternalMetric
             missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
           end
         rescue => e
-          if @postgres_master_available
+          if @postgres_master_available == 1
             Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
           else
             # TODO: Be smarter and connect to the replica. For now, just disable

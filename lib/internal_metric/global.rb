@@ -190,7 +190,12 @@ module DiscoursePrometheus::InternalMetric
             missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
           end
         rescue => e
-          Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
+          if @postgres_master_available
+            Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
+          else
+            # TODO: Be smarter and connect to the replica. For now, just disable
+            # the noise when we failover.
+          end
         end
       end
 

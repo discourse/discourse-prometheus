@@ -2,6 +2,7 @@
 
 require 'raindrops'
 require 'sidekiq/api'
+require 'open3'
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base
@@ -31,9 +32,22 @@ module DiscoursePrometheus::InternalMetric
       @fault_logged = {}
 
       begin
-        @@version ||= Discourse::Utils.execute_command("git rev-list --count HEAD").to_i
+        @@version = nil
+
+        out, error, status = Open3.capture3('git rev-list --count HEAD')
+
+        if status.success?
+          @@version ||= out.to_i
+        else
+          raise error
+        end
       rescue => e
-        Discourse.warn_exception(e, message: "Failed to calculate discourse_version metric")
+        if defined?(::Discourse)
+          Discourse.warn_exception(e, message: "Failed to calculate discourse_version metric")
+        else
+          STDERR.puts "Failed to calculate discourse_version metric: #{e}\n#{e.backtrace.join("\n")}"
+        end
+
         @@retries ||= 10
         @@retries -= 1
         if @@retries < 0

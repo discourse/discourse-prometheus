@@ -5,9 +5,13 @@ require 'rails_helper'
 module DiscoursePrometheus::InternalMetric
   describe Global do
     let(:db) { RailsMultisite::ConnectionManagement.current_db }
+    let(:metric) { Global.new }
+
+    after do
+      metric.reset!
+    end
 
     it "can collect global metrics" do
-      metric = Global.new
       metric.collect
 
       expect(metric.sidekiq_processes).not_to eq(nil)
@@ -19,7 +23,6 @@ module DiscoursePrometheus::InternalMetric
       Discourse.stats.set("missing_s3_uploads", 2)
       Discourse.stats.set("missing_post_uploads", 1)
 
-      metric = Global.new
       metric.collect
 
       expect(metric.missing_s3_uploads).to eq(
@@ -30,13 +33,36 @@ module DiscoursePrometheus::InternalMetric
       )
     end
 
+    it 'should throttle the collection of missing upload metrics' do
+      Discourse.stats.set("missing_s3_uploads", 2)
+
+      metric.collect
+
+      expect(metric.missing_s3_uploads).to eq(
+        { db: db } => 2
+      )
+
+      Discourse.stats.set("missing_s3_uploads", 0)
+      metric.collect
+
+      expect(metric.missing_s3_uploads).to eq(
+        { db: db } => 2
+      )
+
+      metric.reset!
+      metric.collect
+
+      expect(metric.missing_s3_uploads).to eq(
+        { db: db } => 0
+      )
+    end
+
     describe 'sidekiq paused' do
       after do
         Sidekiq.unpause_all!
       end
 
       it "should collect the right metrics" do
-        metric = Global.new
         metric.collect
 
         expect(metric.sidekiq_paused).to eq(
@@ -63,7 +89,6 @@ module DiscoursePrometheus::InternalMetric
       end
 
       it 'should collect the right metrics' do
-        metric = Global.new
         metric.collect
 
         expect(metric.postgres_master_available).to eq(1)

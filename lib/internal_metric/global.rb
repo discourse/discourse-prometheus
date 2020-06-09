@@ -116,6 +116,11 @@ module DiscoursePrometheus::InternalMetric
       @missing_post_uploads = missing_uploads("post")
     end
 
+    # For testing purposes
+    def reset!
+      @@missing_uploads = nil
+    end
+
     private
 
     def primary_site_readonly?
@@ -180,14 +185,21 @@ module DiscoursePrometheus::InternalMetric
       paused
     end
 
-    def missing_uploads(type)
-      missing = {}
+    MISSING_UPLOADS_CHECK_SECONDS = 60
 
-      if Discourse.respond_to?(:stats)
+    def missing_uploads(type)
+      @@missing_uploads ||= {}
+      @@missing_uploads[type] ||= {}
+      @@missing_uploads[type][:stats] ||= {}
+      last_check = @@missing_uploads[type][:last_check]
+
+      if Discourse.respond_to?(:stats) && (!last_check || (Time.now.to_i - last_check > MISSING_UPLOADS_CHECK_SECONDS))
         begin
           RailsMultisite::ConnectionManagement.each_connection do |db|
-            missing[{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
+            @@missing_uploads[type][:stats][{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
           end
+
+          @@missing_uploads[type][:last_check] = Time.now.to_i
         rescue => e
           if @postgres_master_available == 1
             Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
@@ -198,7 +210,7 @@ module DiscoursePrometheus::InternalMetric
         end
       end
 
-      missing
+      @@missing_uploads[type][:stats]
     end
   end
 end

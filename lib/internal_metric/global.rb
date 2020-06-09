@@ -10,7 +10,6 @@ module DiscoursePrometheus::InternalMetric
     STUCK_JOB_MINUTES = 120
 
     attribute :postgres_readonly_mode,
-      :transient_readonly_mode,
       :redis_master_available,
       :redis_slave_available,
       :postgres_master_available,
@@ -76,7 +75,6 @@ module DiscoursePrometheus::InternalMetric
       net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"] unless RbConfig::CONFIG["arch"] =~ /darwin/
 
       @postgres_readonly_mode = primary_site_readonly?
-      @transient_readonly_mode = recently_readonly?
       @redis_master_available = redis_master_running
       @redis_slave_available = redis_slave_running
       @postgres_master_available = postgres_master_running
@@ -166,19 +164,6 @@ module DiscoursePrometheus::InternalMetric
       0
     ensure
       test_connection&.close
-    end
-
-    def recently_readonly?
-      recently_readonly = 0
-
-      RailsMultisite::ConnectionManagement.with_connection('default') do
-        recently_readonly = 1 if Discourse.recently_readonly?
-      end
-
-      recently_readonly
-    rescue
-      # no db
-      0
     end
 
     def sidekiq_paused_states

@@ -108,11 +108,6 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "transient_readonly_mode",
-        "Indicates whether site is in a transient readonly mode"
-      )
-
-      global_metrics << Gauge.new(
         "redis_master_available",
         "Whether or not we have an active connection to the master Redis",
       )

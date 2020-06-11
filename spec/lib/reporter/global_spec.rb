@@ -11,7 +11,6 @@ module DiscoursePrometheus
     end
 
     it "Can collect gc stats" do
-
       collector = Reporter::Global.new(recycle_every: 2)
       metric = collector.collect
 
@@ -22,6 +21,8 @@ module DiscoursePrometheus
       # test recycling
       expect(collector.collect.object_id).to eq(id)
       expect(collector.collect.object_id).not_to eq(id)
+    ensure
+      metric.reset!
     end
   end
 end

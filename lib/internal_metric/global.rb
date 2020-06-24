@@ -245,6 +245,8 @@ module DiscoursePrometheus::InternalMetric
         stats[labels] += 1
       end
       stats
+    rescue => e
+      Discourse.warn_exception(e, message: "Failed to connect to redis to collect scheduled job status")
     end
 
     def find_stuck_sidekiq_jobs

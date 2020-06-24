@@ -158,8 +158,13 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "sidekiq_stuck_workers",
-        "Number of workers which have been running the same job for more than 1 hour"
+        "sidekiq_jobs_stuck",
+        "Number of sidekiq jobs which have been running for more than #{InternalMetric::Global::STUCK_SIDEKIQ_JOB_MINUTES} minutes"
+      )
+
+      global_metrics << Gauge.new(
+        "scheduled_jobs_stuck",
+        "Number of scheduled jobs which have been running for more than their expected duration"
       )
 
       global_metrics << Gauge.new(

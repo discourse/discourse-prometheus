@@ -7,7 +7,7 @@ require 'open3'
 module DiscoursePrometheus::InternalMetric
   class Global < Base
 
-    STUCK_JOB_MINUTES = 120
+    STUCK_SIDEKIQ_JOB_MINUTES = 120
 
     attribute :postgres_readonly_mode,
       :redis_master_available,
@@ -20,7 +20,8 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_processes,
       :sidekiq_paused,
       :sidekiq_workers,
-      :sidekiq_stuck_workers,
+      :sidekiq_jobs_stuck,
+      :scheduled_jobs_stuck,
       :missing_post_uploads,
       :missing_s3_uploads,
       :version
@@ -106,9 +107,8 @@ module DiscoursePrometheus::InternalMetric
         end
       end
 
-      @sidekiq_stuck_workers = Sidekiq::Workers.new.filter do |queue, _, w|
-        queue.start_with?(hostname) && Time.at(w["run_at"]) < (Time.now - 60 * STUCK_JOB_MINUTES)
-      end.count
+      @sidekiq_jobs_stuck = find_stuck_sidekiq_jobs
+      @scheduled_jobs_stuck = find_stuck_scheduled_jobs
 
       @sidekiq_paused = sidekiq_paused_states
 
@@ -211,6 +211,53 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @@missing_uploads[type][:stats]
+    end
+
+    def find_stuck_scheduled_jobs
+      hostname = ::PrometheusExporter.hostname
+      stats = {}
+      MiniScheduler::Manager.discover_schedules.each do |klass|
+        info_key = klass.is_per_host ? MiniScheduler::Manager.schedule_key(klass, hostname) : MiniScheduler::Manager.schedule_key(klass)
+        schedule_info = Discourse.redis.get(info_key)
+        schedule_info = JSON.parse(schedule_info, symbolize_names: true) rescue nil
+
+        next if !schedule_info
+        next if !schedule_info[:prev_result] == "RUNNING" # Only look at jobs which are running
+        next if !schedule_info[:current_owner]&.start_with?("_scheduler_#{hostname}") # Only look at jobs on this host
+
+        job_frequency = klass.every || 1.day
+        started_at = Time.at(schedule_info[:prev_run])
+
+        allowed_duration = begin
+          if job_frequency < 30.minutes
+            30.minutes
+          elsif job_frequency < 2.hours
+            job_frequency
+          else
+            2.hours
+          end
+        end
+
+        next unless started_at < (Time.now - allowed_duration)
+
+        labels = { job_name: klass.name }
+        stats[labels] ||= 0
+        stats[labels] += 1
+      end
+      stats
+    end
+
+    def find_stuck_sidekiq_jobs
+      hostname = ::PrometheusExporter.hostname
+      stats = {}
+      Sidekiq::Workers.new.each do |queue, tid, work|
+        next unless queue.start_with?(hostname)
+        next unless Time.at(work["run_at"]) < (Time.now - 60 * STUCK_SIDEKIQ_JOB_MINUTES)
+        labels = { job_name: work.dig('payload', 'class') }
+        stats[labels] ||= 0
+        stats[labels] += 1
+      end
+      stats
     end
   end
 end

@@ -98,7 +98,7 @@ module DiscoursePrometheus::InternalMetric
       hostname = ::PrometheusExporter.hostname
 
       @sidekiq_processes = 0
-      @sidekiq_workers = Sidekiq::ProcessSet.new.sum do |process|
+      @sidekiq_workers = Sidekiq::ProcessSet.new(false).sum do |process|
         if process["hostname"] == hostname
           @sidekiq_processes += 1
           process["concurrency"]

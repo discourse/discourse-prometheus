@@ -14,7 +14,7 @@ module DiscoursePrometheus::Reporter
       clear_connections!
     rescue => e
       begin
-        Discourse.warn_exception(e, message: "Failed to clear active connections")
+        Discourse.warn_exception(e, message: "Prometheus Discourse Failed To Collect Global Stats")
       rescue => e1
         # never crash an iteration
         STDERR.puts "ERR failed to log warning: #{e1}" rescue nil

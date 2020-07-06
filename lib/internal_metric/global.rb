@@ -22,7 +22,6 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_workers,
       :sidekiq_jobs_stuck,
       :scheduled_jobs_stuck,
-      :missing_post_uploads,
       :missing_s3_uploads,
       :version
 
@@ -113,7 +112,6 @@ module DiscoursePrometheus::InternalMetric
       @sidekiq_paused = sidekiq_paused_states
 
       @missing_s3_uploads = missing_uploads("s3")
-      @missing_post_uploads = missing_uploads("post")
     end
 
     # For testing purposes

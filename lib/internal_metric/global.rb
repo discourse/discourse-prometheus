@@ -72,7 +72,15 @@ module DiscoursePrometheus::InternalMetric
         redis_slave_running = test_redis(:slave, redis_slave_host, redis_slave_port, redis_config[:password])
       end
 
-      net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"] unless RbConfig::CONFIG["arch"] =~ /darwin/
+      net_stats = nil
+
+      if RbConfig::CONFIG["arch"] !~ /darwin/
+        if listener = ENV["UNICORN_LISTENER"]
+          net_stats = Raindrops::Linux::unix_listener_stats([listener])[listener]
+        else
+          net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
+        end
+      end
 
       @postgres_readonly_mode = primary_site_readonly?
       @redis_master_available = redis_master_running

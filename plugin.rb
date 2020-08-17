@@ -29,11 +29,18 @@ require_relative("lib/demon")
 require_relative("lib/middleware/metrics")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
-GlobalSetting.add_default :prometheus_trusted_ip_whitelist_regex, ''
+GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
+  if GlobalSetting.respond_to?(:prometheus_trusted_ip_whitelist_regex) && GlobalSetting.prometheus_trusted_ip_allowlist_regex.blank?
+    Discourse.deprecate("prometheus_trusted_ip_whitelist_regex is deprecated, use the prometheus_trusted_ip_allowlist_regex.", drop_from: "2.6")
+    GlobalSetting.define_singleton_method("prometheus_trusted_ip_allowlist_regex") do
+      GlobalSetting.prometheus_trusted_ip_whitelist_regex
+    end
+  end
+
   $prometheus_client = PrometheusExporter::Client.new(
     host: 'localhost',
     port: GlobalSetting.prometheus_collector_port

@@ -8,6 +8,7 @@ spec = Gem::Specification.load spec_file
 spec.activate
 
 require 'thread'
+require 'set'
 require 'oj'
 require 'prometheus_exporter'
 require 'prometheus_exporter/server'
@@ -25,6 +26,7 @@ require_relative '../lib/collector'
 
 $port = ARGV[0].to_i
 $parent_pid = ARGV[1].to_i
+$pid_file = ARGV[2]
 
 STDERR.puts "#{Time.now}: Starting Prometheus Collector pid: #{Process.pid} port: #{$port}"
 
@@ -33,7 +35,7 @@ if $parent_pid > 0
   Thread.new do
     def alive?(pid)
       Process.kill(0, pid)
-      true
+      File.read($pid_file).to_i == Process.pid
     rescue
       false
     end
@@ -49,7 +51,7 @@ if $parent_pid > 0
       rescue => e
         STDERR.puts "URGENT monitoring thread had an exception #{e}"
       end
-      sleep 1
+      sleep 5
     end
   end
 end

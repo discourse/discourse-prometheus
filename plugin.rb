@@ -56,7 +56,7 @@ after_initialize do
         DiscoursePrometheus::Demon.start
         while true
           DiscoursePrometheus::Demon.ensure_running
-          sleep 1
+          sleep 5
         end
       rescue => e
         STDERR.puts "Failed to initialize prometheus web server from pid: #{Process.pid} #{e}"

@@ -15,9 +15,9 @@ class DiscoursePrometheus::Demon < ::Demon::Base
 
     collector = File.expand_path("../../bin/collector", __FILE__)
 
-    env = "RUBY_GLOBAL_METHOD_CACHE_SIZE=2048 " \
-      "RUBY_GC_HEAP_INIT_SLOTS=10000 "
+    ENV["RUBY_GLOBAL_METHOD_CACHE_SIZE"] = "2048"
+    ENV["RUBY_GC_HEAP_INIT_SLOTS"] = "10000"
 
-    exec "#{env} #{collector} #{GlobalSetting.prometheus_collector_port} #{parent_pid}"
+    exec collector, GlobalSetting.prometheus_collector_port.to_s, parent_pid.to_s, pid_file
   end
 end

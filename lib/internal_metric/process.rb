@@ -13,7 +13,9 @@ module DiscoursePrometheus::InternalMetric
       rss: "Total RSS used by process",
       thread_count: "Total number of active threads per process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
-      active_record_connections_count: "Total number of connections in ActiveRecord's connection pools"
+      active_record_connections_count: "Total number of connections in ActiveRecord's connection pools",
+      readonly: "Current per-site values for each key in Discourse::READONLY_KEYS",
+      last_readonly_seconds: "Local per-site per-process values for postgres and redis last_read_only values"
     }
 
     COUNTERS = {
@@ -37,7 +39,9 @@ module DiscoursePrometheus::InternalMetric
       :pid,
       :created_at,
       :deferred_jobs_queued,
-      :active_record_connections_count
+      :active_record_connections_count,
+      :last_readonly_seconds,
+      :readonly
 
     def initialize
       @active_record_connections_count = {}

@@ -32,7 +32,7 @@ module DiscoursePrometheus::Reporter
       collect_process_stats(metric)
       collect_scheduler_stats(metric)
       collect_active_record_connections_stat(metric)
-      collect_readonly_mode_stats(metric)
+      collect_readonly_stats(metric)
       metric
     end
 
@@ -94,29 +94,36 @@ module DiscoursePrometheus::Reporter
       end
     end
 
-    def collect_readonly_mode_stats(metric)
+    def collect_readonly_stats(metric)
       dbs = RailsMultisite::ConnectionManagement.all_dbs
 
       # Dispose of old data
-      metric.readonly = {}
-      metric.last_readonly_seconds = {}
+      metric.readonly_sites_count = {}
 
       # This readonly info exists in redis. In theory it should be consistent across all processes
       # But if some processes have failed over to the redis replica, there could be discrepencies
       Discourse::READONLY_KEYS.each do |key|
         redis_keys = dbs.map { |db| "#{db}:#{key}" }
-        redis_values = Discourse.redis.without_namespace.mget(redis_keys)
-        dbs.each_with_index do |db, index|
-          metric.readonly[{ key: key, db: db }] = redis_values[index].to_i
-        end
+        count = Discourse.redis.without_namespace.exists(*redis_keys)
+        metric.readonly_sites_count[{ key: key }] = count
       end
 
       # This readonly info is stored in the local process.
       # postgres_last_read_only should be synced via DistributedCache, but this is not guaranteed
+      postgres_recently_readonly = 0
+      redis_recently_readonly = 0
+
+      # Discourse.recently_readonly? uses 15 seconds, but interval of process
+      # metric collection is 30 seconds so allow some extra time to avoid missing readonly changes
+      recent_threshold = 35.seconds.ago
+
       dbs.each do |db|
-        metric.last_readonly_seconds[{ store: "postgres", db: db }] = Discourse.postgres_last_read_only[db].to_i
-        metric.last_readonly_seconds[{ store: "redis", db: db }] = Discourse.redis_last_read_only[db].to_i
+        postgres_recently_readonly += 1 if Discourse.postgres_last_read_only[db].to_i > recent_threshold.to_i
+        redis_recently_readonly += 1 if Discourse.redis_last_read_only[db].to_i > recent_threshold.to_i
       end
+
+      metric.readonly_sites_count[{ key: "postgres_recently_readonly" }] = postgres_recently_readonly
+      metric.readonly_sites_count[{ key: "redis_recently_readonly" }] = redis_recently_readonly
     end
   end
 end

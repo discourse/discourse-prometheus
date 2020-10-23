@@ -30,39 +30,33 @@ module DiscoursePrometheus
         Discourse.clear_readonly!
       end
 
-      it "can collect readonly stats" do
+      it "can collect readonly data from the redis keys" do
         metric = Reporter::Process.new(:web).collect
-        expect(metric.readonly).to eq(
-          Discourse::READONLY_KEYS.map do |k|
-            [{ db: 'default', key: k }, 0 ]
-          end.to_h
-        )
+
+        Discourse::READONLY_KEYS.each do |k|
+          expect(metric.readonly_sites_count[key: k]).to eq(0)
+        end
+
         Discourse.enable_readonly_mode(Discourse::PG_FORCE_READONLY_MODE_KEY)
 
         metric = Reporter::Process.new(:web).collect
-        expect(metric.readonly).to eq(
-          Discourse::READONLY_KEYS.map do |k|
-            [{ db: 'default', key: k }, (k == Discourse::PG_FORCE_READONLY_MODE_KEY) ? 1 : 0]
-          end.to_h
-        )
+        Discourse::READONLY_KEYS.each do |k|
+          expect(metric.readonly_sites_count[key: k]).to eq(k == Discourse::PG_FORCE_READONLY_MODE_KEY ? 1 : 0)
+        end
       end
 
-      it "can collect last_readonly_seconds stats" do
+      it "can collect recently readonly data" do
         freeze_time
 
         metric = Reporter::Process.new(:web).collect
-        expect(metric.last_readonly_seconds).to eq(
-          { db: 'default', store: 'redis' } => 0,
-          { db: 'default', store: 'postgres' } => 0
-        )
+        expect(metric.readonly_sites_count[{ key: 'redis_recently_readonly' }]).to eq(0)
+        expect(metric.readonly_sites_count[{ key: 'postgres_recently_readonly' }]).to eq(0)
 
         Discourse.received_redis_readonly!
 
         metric = Reporter::Process.new(:web).collect
-        expect(metric.last_readonly_seconds).to eq(
-          { db: 'default', store: 'redis' } => Time.zone.now.to_i,
-          { db: 'default', store: 'postgres' } => 0
-        )
+        expect(metric.readonly_sites_count[{ key: 'redis_recently_readonly' }]).to eq(1)
+        expect(metric.readonly_sites_count[{ key: 'postgres_recently_readonly' }]).to eq(0)
       end
     end
   end

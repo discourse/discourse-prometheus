@@ -14,7 +14,8 @@ module DiscoursePrometheus::InternalMetric
       thread_count: "Total number of active threads per process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
       active_record_connections_count: "Total number of connections in ActiveRecord's connection pools",
-      readonly_sites_count: "Number of sites currently in readonly mode. Key is one of Discourse::READONLY_KEYS, 'redis_recently_readonly' or 'postgres_recently_readonly'"
+      active_record_failover_count: "Count of activerecord backends in a failover state",
+      redis_failover_count: "Count of redis backends in a failover state"
     }
 
     COUNTERS = {
@@ -39,7 +40,8 @@ module DiscoursePrometheus::InternalMetric
       :created_at,
       :deferred_jobs_queued,
       :active_record_connections_count,
-      :readonly_sites_count
+      :active_record_failover_count,
+      :redis_failover_count
 
     def initialize
       @active_record_connections_count = {}

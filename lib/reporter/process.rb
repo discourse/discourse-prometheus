@@ -95,7 +95,6 @@ module DiscoursePrometheus::Reporter
     end
 
     def collect_failover_stats(metric)
-      dbs = RailsMultisite::ConnectionManagement.all_dbs
 
       if defined?(RailsFailover::ActiveRecord) && RailsFailover::ActiveRecord::Handler.instance.respond_to?(:primaries_down_count)
         metric.active_record_failover_count = RailsFailover::ActiveRecord::Handler.instance.primaries_down_count

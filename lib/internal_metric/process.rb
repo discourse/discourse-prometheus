@@ -14,7 +14,7 @@ module DiscoursePrometheus::InternalMetric
       thread_count: "Total number of active threads per process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
       active_record_connections_count: "Total number of connections in ActiveRecord's connection pools",
-      active_record_failover_count: "Count of activerecord backends in a failover state",
+      active_record_failover_count: "Count of ActiveRecord databases in a failover state",
       redis_failover_count: "Count of redis backends in a failover state"
     }
 

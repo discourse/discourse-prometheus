@@ -23,5 +23,12 @@ module DiscoursePrometheus
         :minor_gc_count, :total_allocated_objects, :v8_heap_size,
         :v8_heap_count, :v8_physical_size, :pid, :rss, :thread_count)
     end
+
+    it "can collect failover data" do
+      metric = Reporter::Process.new(:web).collect
+
+      expect(metric.active_record_failover_count).to eq(0)
+      expect(metric.redis_failover_count).to eq(0)
+    end
   end
 end

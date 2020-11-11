@@ -13,7 +13,9 @@ module DiscoursePrometheus::InternalMetric
       rss: "Total RSS used by process",
       thread_count: "Total number of active threads per process",
       deferred_jobs_queued: "Number of jobs queued in the deferred job queue",
-      active_record_connections_count: "Total number of connections in ActiveRecord's connection pools"
+      active_record_connections_count: "Total number of connections in ActiveRecord's connection pools",
+      active_record_failover_count: "Count of ActiveRecord databases in a failover state",
+      redis_failover_count: "Count of Redis servers in a failover state"
     }
 
     COUNTERS = {
@@ -37,7 +39,9 @@ module DiscoursePrometheus::InternalMetric
       :pid,
       :created_at,
       :deferred_jobs_queued,
-      :active_record_connections_count
+      :active_record_connections_count,
+      :active_record_failover_count,
+      :redis_failover_count
 
     def initialize
       @active_record_connections_count = {}

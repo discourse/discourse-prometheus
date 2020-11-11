@@ -32,6 +32,7 @@ module DiscoursePrometheus::Reporter
       collect_process_stats(metric)
       collect_scheduler_stats(metric)
       collect_active_record_connections_stat(metric)
+      collect_failover_stats(metric)
       metric
     end
 
@@ -90,6 +91,17 @@ module DiscoursePrometheus::Reporter
             metric.active_record_connections_count[key] += stat[status]
           end
         end
+      end
+    end
+
+    def collect_failover_stats(metric)
+
+      if defined?(RailsFailover::ActiveRecord) && RailsFailover::ActiveRecord::Handler.instance.respond_to?(:primaries_down_count)
+        metric.active_record_failover_count = RailsFailover::ActiveRecord::Handler.instance.primaries_down_count
+      end
+
+      if defined?(RailsFailover::Redis) && RailsFailover::Redis::Handler.instance.respond_to?(:primaries_down_count)
+        metric.redis_failover_count = RailsFailover::Redis::Handler.instance.primaries_down_count
       end
     end
   end

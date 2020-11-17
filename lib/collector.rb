@@ -176,6 +176,11 @@ module ::DiscoursePrometheus
         "Revision number of discourse starting from HEAD"
       )
 
+      global_metrics << Gauge.new(
+        "readonly_sites",
+        "Count of sites currently in readonly mode, grouped by the relevant key from Discourse::READONLY_KEYS"
+      )
+
       @global_metrics = global_metrics
     end
 

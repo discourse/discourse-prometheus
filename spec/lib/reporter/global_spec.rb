@@ -44,6 +44,8 @@ module DiscoursePrometheus
         Discourse::READONLY_KEYS.each do |k|
           expect(metric.readonly_sites[key: k]).to eq(k == Discourse::PG_FORCE_READONLY_MODE_KEY ? 1 : 0)
         end
+      ensure
+        metric.reset!
       end
     end
   end

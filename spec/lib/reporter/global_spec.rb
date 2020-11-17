@@ -24,5 +24,29 @@ module DiscoursePrometheus
     ensure
       metric.reset!
     end
+
+    describe "with readonly mode cleanup" do
+      after do
+        Discourse.disable_readonly_mode(Discourse::PG_FORCE_READONLY_MODE_KEY)
+        Discourse.clear_readonly!
+      end
+
+      it "can collect readonly data from the redis keys" do
+        metric = Reporter::Global.new.collect
+
+        Discourse::READONLY_KEYS.each do |k|
+          expect(metric.readonly_sites[key: k]).to eq(0)
+        end
+
+        Discourse.enable_readonly_mode(Discourse::PG_FORCE_READONLY_MODE_KEY)
+
+        metric = Reporter::Global.new.collect
+        Discourse::READONLY_KEYS.each do |k|
+          expect(metric.readonly_sites[key: k]).to eq(k == Discourse::PG_FORCE_READONLY_MODE_KEY ? 1 : 0)
+        end
+      ensure
+        metric.reset!
+      end
+    end
   end
 end

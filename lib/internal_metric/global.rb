@@ -23,7 +23,8 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_jobs_stuck,
       :scheduled_jobs_stuck,
       :missing_s3_uploads,
-      :version
+      :version,
+      :readonly_sites
 
     def initialize
       @active_app_reqs = 0
@@ -120,6 +121,8 @@ module DiscoursePrometheus::InternalMetric
       @sidekiq_paused = sidekiq_paused_states
 
       @missing_s3_uploads = missing_uploads("s3")
+
+      @readonly_sites = collect_readonly_sites
     end
 
     # For testing purposes
@@ -128,6 +131,19 @@ module DiscoursePrometheus::InternalMetric
     end
 
     private
+
+    def collect_readonly_sites
+      dbs = RailsMultisite::ConnectionManagement.all_dbs
+      result = {}
+
+      Discourse::READONLY_KEYS.each do |key|
+        redis_keys = dbs.map { |db| "#{db}:#{key}" }
+        count = Discourse.redis.without_namespace.exists(*redis_keys)
+        result[{ key: key }] = count
+      end
+
+      result
+    end
 
     def primary_site_readonly?
       if !defined?(Discourse::PG_READONLY_MODE_KEY)

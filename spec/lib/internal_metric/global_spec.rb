@@ -19,38 +19,62 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.postgres_replica_available).to eq(nil)
     end
 
-    it "should collect the missing upload metrics" do
-      Discourse.stats.set("missing_s3_uploads", 2)
+    describe "missing_s3_uploads metric" do
+      before do
+        SiteSetting.enable_s3_uploads = true
+        SiteSetting.s3_region = 'us-west-1'
+        SiteSetting.s3_upload_bucket = "s3-upload-bucket"
+        SiteSetting.s3_access_key_id = "some key"
+        SiteSetting.s3_secret_access_key = "some secrets3_region key"
 
-      metric.collect
+        SiteSetting.enable_s3_inventory = true
+      end
 
-      expect(metric.missing_s3_uploads).to eq(
-        { db: db } => 2
-      )
-    end
+      it "should collect the missing upload metrics" do
+        Discourse.stats.set("missing_s3_uploads", 2)
 
-    it 'should throttle the collection of missing upload metrics' do
-      Discourse.stats.set("missing_s3_uploads", 2)
+        metric.collect
 
-      metric.collect
+        expect(metric.missing_s3_uploads).to eq(
+          { db: db } => 2
+        )
+      end
 
-      expect(metric.missing_s3_uploads).to eq(
-        { db: db } => 2
-      )
+      it 'should throttle the collection of missing upload metrics' do
+        Discourse.stats.set("missing_s3_uploads", 2)
 
-      Discourse.stats.set("missing_s3_uploads", 0)
-      metric.collect
+        metric.collect
 
-      expect(metric.missing_s3_uploads).to eq(
-        { db: db } => 2
-      )
+        expect(metric.missing_s3_uploads).to eq(
+          { db: db } => 2
+        )
 
-      metric.reset!
-      metric.collect
+        Discourse.stats.set("missing_s3_uploads", 0)
+        metric.collect
 
-      expect(metric.missing_s3_uploads).to eq(
-        { db: db } => 0
-      )
+        expect(metric.missing_s3_uploads).to eq(
+          { db: db } => 2
+        )
+
+        metric.reset!
+        metric.collect
+
+        expect(metric.missing_s3_uploads).to eq(
+          { db: db } => 0
+        )
+      end
+
+      context "when S3 inventory is disabled for the site" do
+        before { SiteSetting.enable_s3_inventory = false }
+
+        it "does not expose the metric" do
+          Discourse.stats.set("missing_s3_uploads", 2)
+
+          metric.collect
+
+          expect(metric.missing_s3_uploads).to eq({})
+        end
+      end
     end
 
     describe 'sidekiq paused' do

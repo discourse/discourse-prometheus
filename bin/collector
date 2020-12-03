@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+Process.setproctitle("discourse prometheus-collector")
+
 version = File.read(File.expand_path("../../prometheus_exporter_version", __FILE__)).strip
 spec_file = File.expand_path("../../gems/#{RUBY_VERSION}/specifications/prometheus_exporter-#{version}.gemspec", __FILE__)
 

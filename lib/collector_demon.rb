@@ -2,9 +2,9 @@
 #
 require_dependency 'demon/base'
 
-class DiscoursePrometheus::Demon < ::Demon::Base
+class DiscoursePrometheus::CollectorDemon < ::Demon::Base
   def self.prefix
-    "prometheus-demon"
+    "prometheus-collector"
   end
 
   def run

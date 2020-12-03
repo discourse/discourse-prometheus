@@ -24,7 +24,8 @@ require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
 require_relative("lib/reporter/web")
 
-require_relative("lib/demon")
+require_relative("lib/collector_demon")
+require_relative("lib/global_reporter_demon")
 
 require_relative("lib/middleware/metrics")
 
@@ -53,21 +54,16 @@ after_initialize do
   if Discourse.running_in_rack?
     Thread.new do
       begin
-        DiscoursePrometheus::Demon.start
+        DiscoursePrometheus::CollectorDemon.start
+        DiscoursePrometheus::GlobalReporterDemon.start
         while true
-          DiscoursePrometheus::Demon.ensure_running
+          DiscoursePrometheus::CollectorDemon.ensure_running
+          DiscoursePrometheus::GlobalReporterDemon.ensure_running
           sleep 5
         end
       rescue => e
-        STDERR.puts "Failed to initialize prometheus web server from pid: #{Process.pid} #{e}"
+        STDERR.puts "Failed to initialize prometheus demons from pid: #{Process.pid} #{e}"
       end
-    end
-
-    DiscoursePrometheus::Reporter::Global.start($prometheus_client)
-
-    # in dev we may use puma and it runs in a single process
-    if Rails.env == "development"
-      DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
     end
   end
 

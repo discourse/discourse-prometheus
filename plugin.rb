@@ -50,8 +50,11 @@ after_initialize do
   # creates no new threads, this simply adds the instruments
   DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
 
-  # happens once per rack application
-  if Discourse.running_in_rack?
+  if respond_to? :register_demon_process
+    register_demon_process(DiscoursePrometheus::CollectorDemon)
+    register_demon_process(DiscoursePrometheus::GlobalReporterDemon)
+  elsif Discourse.running_in_rack?
+    # TODO: Remove once Discourse 2.7 stable is released
     Thread.new do
       begin
         DiscoursePrometheus::CollectorDemon.start

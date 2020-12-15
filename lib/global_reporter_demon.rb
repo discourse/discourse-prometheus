@@ -18,6 +18,13 @@ class DiscoursePrometheus::GlobalReporterDemon < ::Demon::Base
   def after_fork
     STDERR.puts "#{Time.now}: Starting Prometheus global reporter pid: #{Process.pid}"
     t = DiscoursePrometheus::Reporter::Global.start($prometheus_client)
+
+    trap('INT')  { DiscoursePrometheus::Reporter::Global.stop }
+    trap('TERM') { DiscoursePrometheus::Reporter::Global.stop }
+    trap('QUIT') { DiscoursePrometheus::Reporter::Global.stop }
+
     t.join
+    STDERR.puts "#{Time.now}: Stopping Prometheus global reporter pid: #{Process.pid}"
+    exit 0
   end
 end

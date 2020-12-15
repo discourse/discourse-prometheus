@@ -21,15 +21,24 @@ module DiscoursePrometheus::Reporter
       end
     end
 
+    def self.sleep_unless_interrupted(seconds)
+      IO.select([@r], nil, nil, seconds)
+    end
+
     def self.start(client)
+      @r, @w = IO.pipe
       global_collector = new
       Thread.new do
-        while true
+        while !@stopping
           iteration(global_collector, client)
-          sleep 5
+          sleep_unless_interrupted 5
         end
       end
+    end
 
+    def self.stop
+      @stopping = true
+      @w.close
     end
 
     def initialize(recycle_every: 6)

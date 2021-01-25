@@ -20,6 +20,8 @@ module DiscoursePrometheus::InternalMetric
     end
 
     it "can collect the version_info metric" do
+      metric.collect
+
       expect(metric.version_info.count).to eq(1)
       labels = metric.version_info.keys.first
       value = metric.version_info.values.first

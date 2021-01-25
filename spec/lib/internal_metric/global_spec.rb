@@ -19,6 +19,18 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.postgres_replica_available).to eq(nil)
     end
 
+    it "can collect the version_info metric" do
+      metric.collect
+
+      expect(metric.version_info.count).to eq(1)
+      labels = metric.version_info.keys.first
+      value = metric.version_info.values.first
+
+      expect(labels[:revision]).to match(/\A[0-9a-f]{40}\z/)
+      expect(labels[:version]).to eq(Discourse::VERSION::STRING)
+      expect(value).to eq(1)
+    end
+
     describe "missing_s3_uploads metric" do
       before do
         SiteSetting.enable_s3_uploads = true

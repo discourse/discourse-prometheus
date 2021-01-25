@@ -23,7 +23,7 @@ module DiscoursePrometheus::InternalMetric
       :sidekiq_jobs_stuck,
       :scheduled_jobs_stuck,
       :missing_s3_uploads,
-      :version,
+      :version_info,
       :readonly_sites
 
     def initialize
@@ -34,18 +34,18 @@ module DiscoursePrometheus::InternalMetric
       begin
         @@version = nil
 
-        out, error, status = Open3.capture3('git rev-list --count HEAD')
+        out, error, status = Open3.capture3('git rev-parse HEAD')
 
         if status.success?
-          @@version ||= out.to_i
+          @@version ||= out.chomp
         else
           raise error
         end
       rescue => e
         if defined?(::Discourse)
-          Discourse.warn_exception(e, message: "Failed to calculate discourse_version metric")
+          Discourse.warn_exception(e, message: "Failed to calculate discourse_version_info metric")
         else
-          STDERR.puts "Failed to calculate discourse_version metric: #{e}\n#{e.backtrace.join("\n")}"
+          STDERR.puts "Failed to calculate discourse_version_info metric: #{e}\n#{e.backtrace.join("\n")}"
         end
 
         @@retries ||= 10
@@ -54,11 +54,13 @@ module DiscoursePrometheus::InternalMetric
           @@version = -1
         end
       end
-
-      @version = @@version || -2
     end
 
     def collect
+      @version_info ||= {
+        { revision: @@version, version: Discourse::VERSION::STRING } => 1
+      }
+
       redis_config = GlobalSetting.redis_config
       redis_master_running = test_redis(:master, redis_config[:host], redis_config[:port], redis_config[:password])
       redis_slave_running = 0

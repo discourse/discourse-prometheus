@@ -172,8 +172,8 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "version",
-        "Revision number of discourse starting from HEAD"
+        "version_info",
+        "Labelled with `revision` (current core commit hash), and `version` (Discourse::VERSION::STRING)"
       )
 
       global_metrics << Gauge.new(

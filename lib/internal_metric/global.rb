@@ -161,7 +161,7 @@ module DiscoursePrometheus::InternalMetric
     end
 
     def test_postgres(master: true)
-      config = ActiveRecord::Base.connection_config
+      config = ActiveRecord::Base.connection_db_config.configuration_hash
 
       unless master
         if config[:replica_host]

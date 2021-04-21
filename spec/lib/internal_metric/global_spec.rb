@@ -112,12 +112,14 @@ module DiscoursePrometheus::InternalMetric
 
     describe 'when a replica has been configured' do
       before do
-        config = ActiveRecord::Base.connection_config
+        config = ActiveRecord::Base.connection_db_config.configuration_hash.dup
 
         config.merge!(
           replica_host: 'localhost',
           replica_port: 1111
         )
+        ActiveRecord::Base.connection.disconnect!
+        ActiveRecord::Base.establish_connection(config)
       end
 
       it 'should collect the right metrics' do

@@ -93,4 +93,9 @@ after_initialize do
     metric.job_name = worker.class.to_s
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
+
+  DiscourseEvent.on(:export_gauge_metric) do |name, description, value|
+    metric_h = DiscoursePrometheus::InternalMetric::Custom.create_gauge_hash(name, description, value)
+    $prometheus_client.send_json(metric_h) unless Rails.env.test?
+  end
 end

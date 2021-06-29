@@ -9,8 +9,8 @@ module DiscoursePrometheus::Reporter
 
     def self.iteration(global_collector, client)
       clear_connections!
-      metric = global_collector.collect
-      client.send_json metric
+      metrics = global_collector.collect
+      metrics.each { |metric| client.send_json(metric) }
       clear_connections!
     rescue => e
       begin
@@ -28,6 +28,7 @@ module DiscoursePrometheus::Reporter
     def self.start(client)
       @r, @w = IO.pipe
       global_collector = new
+
       Thread.new do
         while !@stopping
           iteration(global_collector, client)
@@ -44,19 +45,28 @@ module DiscoursePrometheus::Reporter
     def initialize(recycle_every: 6)
       @recycle_every = recycle_every
       @collections = 0
-      @metrics = ::DiscoursePrometheus::InternalMetric::Global.new
+      fetch_metrics
     end
 
     def collect
       if @collections >= @recycle_every
-        @metrics = ::DiscoursePrometheus::InternalMetric::Global.new
+        fetch_metrics
         @collections = 0
       else
         @collections += 1
       end
 
-      @metrics.collect
+      @metrics.each(&:collect)
       @metrics
+    end
+
+    private
+
+    def fetch_metrics
+      metrics = [::DiscoursePrometheus::InternalMetric::Global]
+      metrics = metrics.concat(DiscoursePluginRegistry.global_collectors)
+
+      @metrics = metrics.map(&:new)
     end
   end
 end

@@ -31,6 +31,7 @@ require_relative("lib/middleware/metrics")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
 GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
+DiscoursePluginRegistry.define_filtered_register :global_collectors
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 

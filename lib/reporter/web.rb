@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-require_dependency 'middleware/request_tracker'
+require 'middleware/request_tracker'
 
 class DiscoursePrometheus::Reporter::Web
 

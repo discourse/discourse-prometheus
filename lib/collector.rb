@@ -269,15 +269,14 @@ module ::DiscoursePrometheus
         labels[:action] = "other"
       end
 
+      labels[:logged_in] = metric.logged_in
+
       @http_duration_seconds.observe(metric.duration, labels)
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
       @http_net_duration_seconds.observe(metric.net_duration, labels)
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
-      @http_sql_calls_per_request.observe(
-        metric.sql_calls,
-        labels.merge(logged_in: metric.logged_in),
-      )
+      @http_sql_calls_per_request.observe(metric.sql_calls, labels)
 
       if cache = metric.cache
         if cache == "store"

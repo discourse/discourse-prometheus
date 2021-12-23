@@ -17,6 +17,8 @@ module DiscoursePrometheus::InternalMetric
         case (hash["_type"] || hash[:_type])
         when "Job"
           Job
+        when "Email"
+          Email
         when "Global"
           Global
         when "Web"
@@ -55,6 +57,8 @@ module DiscoursePrometheus::InternalMetric
         case self
         when Job
           "Job"
+        when Email
+          "Email"
         when Global
           "Global"
         when Web

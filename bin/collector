@@ -21,6 +21,7 @@ module DiscoursePrometheus; end
 require_relative '../lib/internal_metric/base'
 require_relative '../lib/internal_metric/global'
 require_relative '../lib/internal_metric/job'
+require_relative '../lib/internal_metric/email'
 require_relative '../lib/internal_metric/process'
 require_relative '../lib/internal_metric/web'
 require_relative '../lib/internal_metric/custom'

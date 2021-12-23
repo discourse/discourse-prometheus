@@ -16,6 +16,7 @@ require 'prometheus_exporter/client'
 require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")
 require_relative("lib/internal_metric/job")
+require_relative("lib/internal_metric/email")
 require_relative("lib/internal_metric/process")
 require_relative("lib/internal_metric/web")
 require_relative("lib/internal_metric/custom")
@@ -68,6 +69,21 @@ after_initialize do
     metric.scheduled = false
     metric.duration = duration
     metric.job_name = worker.class.to_s
+    $prometheus_client.send_json metric.to_h unless Rails.env.test?
+  end
+
+  on(:before_email_send) do |message, email_type|
+    metric = DiscoursePrometheus::InternalMetric::Email.new
+    metric.db = RailsMultisite::ConnectionManagement.current_db
+    metric.email_type = email_type
+    $prometheus_client.send_json metric.to_h unless Rails.env.test?
+  end
+
+  on(:email_bounce) do |mail, incoming_email, matched_email_log|
+    metric = DiscoursePrometheus::InternalMetric::Email.new
+    metric.db = RailsMultisite::ConnectionManagement.current_db
+    metric.email_type = matched_email_log&.email_type
+    metric.bounce = true
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 end

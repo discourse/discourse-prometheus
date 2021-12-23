@@ -42,6 +42,8 @@ module ::DiscoursePrometheus
         process_web(metric)
       elsif InternalMetric::Job === metric
         process_job(metric)
+      elsif InternalMetric::Email === metric
+        process_email(metric)
       elsif InternalMetric::Global === metric
         process_global(metric)
       elsif InternalMetric::Custom === metric
@@ -207,6 +209,28 @@ module ::DiscoursePrometheus
       end
     end
 
+    def process_email(metric)
+      ensure_email_metrics
+
+      hash = {
+        type: metric.email_type || "unknown",
+        db: metric.db
+      }
+
+      if metric.bounce
+        @email_bounced_count.observe(1, hash)
+      else
+        @email_sent_count.observe(1, hash)
+      end
+    end
+
+    def ensure_email_metrics
+      unless @email_sent_count
+        @email_sent_count = Counter.new("email_sent_count", "Number of emails sent")
+        @email_bounced_count = Counter.new("email_bounced_count", "Number of email bounces received")
+      end
+    end
+
     def process_process(metric)
       now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       # process clock monotonic is used here so keep collector process time
@@ -308,7 +332,7 @@ module ::DiscoursePrometheus
     end
 
     def prometheus_metrics
-      metrics = web_metrics + process_metrics + job_metrics + @global_metrics
+      metrics = web_metrics + process_metrics + job_metrics + email_metrics + @global_metrics
       if @custom_metrics
         metrics += @custom_metrics.values
       end
@@ -329,6 +353,14 @@ module ::DiscoursePrometheus
         []
       end
 
+    end
+
+    def email_metrics
+      if @email_sent_count
+        [ @email_sent_count, @email_bounced_count ]
+      else
+        []
+      end
     end
 
     def process_metrics

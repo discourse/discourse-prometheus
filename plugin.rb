@@ -36,13 +36,6 @@ DiscoursePluginRegistry.define_filtered_register :global_collectors
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
-  if GlobalSetting.respond_to?(:prometheus_trusted_ip_whitelist_regex) && GlobalSetting.prometheus_trusted_ip_allowlist_regex.blank?
-    Discourse.deprecate("prometheus_trusted_ip_whitelist_regex is deprecated, use the prometheus_trusted_ip_allowlist_regex.", drop_from: "2.6")
-    GlobalSetting.define_singleton_method("prometheus_trusted_ip_allowlist_regex") do
-      GlobalSetting.prometheus_trusted_ip_whitelist_regex
-    end
-  end
-
   $prometheus_client = PrometheusExporter::Client.new(
     host: 'localhost',
     port: GlobalSetting.prometheus_collector_port
@@ -51,35 +44,18 @@ after_initialize do
   # creates no new threads, this simply adds the instruments
   DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
 
-  if respond_to? :register_demon_process
-    register_demon_process(DiscoursePrometheus::CollectorDemon)
-    register_demon_process(DiscoursePrometheus::GlobalReporterDemon)
-  elsif Discourse.running_in_rack?
-    # TODO: Remove once Discourse 2.7 stable is released
-    Thread.new do
-      begin
-        DiscoursePrometheus::CollectorDemon.start
-        DiscoursePrometheus::GlobalReporterDemon.start
-        while true
-          DiscoursePrometheus::CollectorDemon.ensure_running
-          DiscoursePrometheus::GlobalReporterDemon.ensure_running
-          sleep 5
-        end
-      rescue => e
-        STDERR.puts "Failed to initialize prometheus demons from pid: #{Process.pid} #{e}"
-      end
-    end
-  end
+  register_demon_process(DiscoursePrometheus::CollectorDemon)
+  register_demon_process(DiscoursePrometheus::GlobalReporterDemon)
 
-  DiscourseEvent.on(:sidekiq_fork_started) do
+  on(:sidekiq_fork_started) do
     DiscoursePrometheus::Reporter::Process.start($prometheus_client, :sidekiq)
   end
 
-  DiscourseEvent.on(:web_fork_started) do
+  on(:web_fork_started) do
     DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
   end
 
-  DiscourseEvent.on(:scheduled_job_ran) do |stat|
+  on(:scheduled_job_ran) do |stat|
     metric = DiscoursePrometheus::InternalMetric::Job.new
     metric.scheduled = true
     metric.job_name = stat.name
@@ -87,7 +63,7 @@ after_initialize do
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 
-  DiscourseEvent.on(:sidekiq_job_ran) do |worker, msg, queue, duration|
+  on(:sidekiq_job_ran) do |worker, msg, queue, duration|
     metric = DiscoursePrometheus::InternalMetric::Job.new
     metric.scheduled = false
     metric.duration = duration

@@ -32,6 +32,7 @@ module DiscoursePrometheus::InternalMetric
     }
 
     STRING_ATTRS = %w{
+      background_type
       verb
       controller
       action
@@ -112,6 +113,7 @@ module DiscoursePrometheus::InternalMetric
       metric.crawler = !!data[:is_crawler]
       metric.logged_in = !!data[:has_auth_cookie]
       metric.background = !!data[:is_background]
+      metric.background_type = data[:background_type]
       metric.mobile = !!data[:is_mobile]
       metric.tracked = !!data[:track_view]
       metric.cache = data[:cache]

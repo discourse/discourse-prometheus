@@ -108,17 +108,32 @@ module ::DiscoursePrometheus
 
       global_metrics << Gauge.new(
         "redis_master_available",
-        "Whether or not we have an active connection to the master Redis",
+        "DEPRECATED: see redis_primary_available"
+      )
+
+      global_metrics << Gauge.new(
+        "redis_primary_available",
+        "Whether or not we have an active connection to the primary Redis",
       )
 
       global_metrics << Gauge.new(
         "redis_slave_available",
-        "Whether or not we have an active connection a Redis slave"
+        "DEPRECATED: see redis_replica_available"
+      )
+
+      global_metrics << Gauge.new(
+        "redis_replica_available",
+        "Whether or not we have an active connection to the replica Redis"
       )
 
       global_metrics << Gauge.new(
         "postgres_master_available",
-        "Whether or not we have an active connection to the master PostgreSQL"
+        "DEPRECATED: See postgres_primary_available"
+      )
+
+      global_metrics << Gauge.new(
+        "postgres_primary_available",
+        "Whether or not we have an active connection to the primary PostgreSQL"
       )
 
       global_metrics << Gauge.new(

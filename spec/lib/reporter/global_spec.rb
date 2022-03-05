@@ -15,7 +15,7 @@ module DiscoursePrometheus
       collector = Reporter::Global.new(recycle_every: 2)
       metric = collector.collect.first
 
-      expect(metric.redis_slave_available).to eq(0)
+      expect(metric.redis_slave_available[{ type: 'main' }]).to eq(0)
 
       id = metric.object_id
 

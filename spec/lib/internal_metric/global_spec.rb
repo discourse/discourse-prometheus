@@ -17,6 +17,12 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.sidekiq_processes).not_to eq(nil)
       expect(metric.postgres_master_available).to eq(1)
       expect(metric.postgres_replica_available).to eq(nil)
+      expect(metric.redis_primary_available).to eq({
+        { type: "main" } => 1
+      })
+      expect(metric.redis_replica_available).to eq({
+        { type: "main" } => 0
+      })
     end
 
     it "can collect the version_info metric" do

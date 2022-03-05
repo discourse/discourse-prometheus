@@ -62,7 +62,7 @@ module DiscoursePrometheus::InternalMetric
       }
 
       redis_config = GlobalSetting.redis_config
-      redis_master_running = test_redis(:master, redis_config[:host], redis_config[:port], redis_config[:password])
+      redis_master_running = test_redis(:master, host: redis_config[:host], port: redis_config[:port], password: redis_config[:password], ssl: redis_config[:ssl])
       redis_slave_running = 0
 
       postgres_master_running = test_postgres(master: true)
@@ -72,7 +72,7 @@ module DiscoursePrometheus::InternalMetric
       redis_slave_port = redis_config[:slave_port] || redis_config[:replica_port]
 
       if redis_slave_host
-        redis_slave_running = test_redis(:slave, redis_slave_host, redis_slave_port, redis_config[:password])
+        redis_slave_running = test_redis(:slave, host: redis_slave_host, port: redis_slave_port, password: redis_config[:password], ssl: redis_config[:ssl])
       end
 
       net_stats = nil
@@ -182,8 +182,8 @@ module DiscoursePrometheus::InternalMetric
       connection&.disconnect!
     end
 
-    def test_redis(role, host, port, password)
-      test_connection = Redis.new(host: host, port: port, password: password)
+    def test_redis(role, **config)
+      test_connection = Redis.new(**config)
       if test_connection.ping == "PONG"
         1
       else

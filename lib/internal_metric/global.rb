@@ -12,7 +12,10 @@ module DiscoursePrometheus::InternalMetric
     attribute :postgres_readonly_mode,
       :redis_master_available,
       :redis_slave_available,
+      :redis_primary_available,
+      :redis_replica_available,
       :postgres_master_available,
+      :postgres_primary_available,
       :postgres_replica_available,
       :active_app_reqs,
       :queued_app_reqs,
@@ -61,19 +64,33 @@ module DiscoursePrometheus::InternalMetric
         { revision: @@version, version: Discourse::VERSION::STRING } => 1
       }
 
+      redis_primary_running = {}
+      redis_replica_running = {}
+
       redis_config = GlobalSetting.redis_config
-      redis_master_running = test_redis(:master, host: redis_config[:host], port: redis_config[:port], password: redis_config[:password], ssl: redis_config[:ssl])
-      redis_slave_running = 0
+      redis_primary_running[{ type: 'main' }] = test_redis(:master, host: redis_config[:host], port: redis_config[:port], password: redis_config[:password], ssl: redis_config[:ssl])
+      redis_replica_running[{ type: 'main' }] = 0
 
-      postgres_master_running = test_postgres(master: true)
-      postgres_replica_running = test_postgres(master: false)
-
-      redis_slave_host = redis_config[:slave_host] || redis_config[:replica_host]
-      redis_slave_port = redis_config[:slave_port] || redis_config[:replica_port]
-
-      if redis_slave_host
-        redis_slave_running = test_redis(:slave, host: redis_slave_host, port: redis_slave_port, password: redis_config[:password], ssl: redis_config[:ssl])
+      if redis_config[:replica_host]
+        redis_replica_running[{ type: 'main' }] = test_redis(:slave, host: redis_config[:replica_host], port: redis_config[:replica_port], password: redis_config[:password], ssl: redis_config[:ssl])
+      else
+        redis_replica_running[{ type: 'main' }] = 0
       end
+
+      if GlobalSetting.message_bus_redis_enabled
+        mb_redis_config = GlobalSetting.message_bus_redis_config
+        redis_primary_running[{ type: 'message-bus' }] = test_redis(:master, host: mb_redis_config[:host], port: mb_redis_config[:port], password: mb_redis_config[:password], ssl: mb_redis_config[:ssl])
+        redis_replica_running[{ type: 'message-bus' }] = 0
+
+        if mb_redis_config[:replica_host]
+          redis_replica_running[{ type: 'message-bus' }] = test_redis(:slave, host: mb_redis_config[:replica_host], port: mb_redis_config[:replica_port], password: mb_redis_config[:password], ssl: mb_redis_config[:ssl])
+        else
+          redis_replica_running[{ type: 'message-bus' }] = 0
+        end
+      end
+
+      postgres_primary_running = test_postgres(primary: true)
+      postgres_replica_running = test_postgres(primary: false)
 
       net_stats = nil
 
@@ -86,9 +103,9 @@ module DiscoursePrometheus::InternalMetric
       end
 
       @postgres_readonly_mode = primary_site_readonly?
-      @redis_master_available = redis_master_running
-      @redis_slave_available = redis_slave_running
-      @postgres_master_available = postgres_master_running
+      @redis_primary_available = @redis_master_available = redis_primary_running
+      @redis_replica_available = @redis_slave_available = redis_replica_running
+      @postgres_primary_available = @postgres_master_available = postgres_primary_running
       @postgres_replica_available = postgres_replica_running
 
       # active and queued are special metrics that track max
@@ -160,10 +177,10 @@ module DiscoursePrometheus::InternalMetric
       0
     end
 
-    def test_postgres(master: true)
+    def test_postgres(primary: true)
       config = ActiveRecord::Base.connection_db_config.configuration_hash
 
-      unless master
+      unless primary
         if config[:replica_host]
           config = config.dup.merge(
             host: config[:replica_host],

@@ -11,34 +11,31 @@ module ::DiscoursePrometheus; end
 # a bit odd but we need to read this from a version file
 # cause this is loaded from the collector bin
 gem 'prometheus_exporter', File.read(File.expand_path("../prometheus_exporter_version", __FILE__)).strip
+require 'prometheus_exporter/client'
 
-# Rails middleware configuration is frozen after initialization so we need to add the middleware early.
+require_relative("lib/internal_metric/base")
+require_relative("lib/internal_metric/global")
+require_relative("lib/internal_metric/job")
+require_relative("lib/internal_metric/process")
+require_relative("lib/internal_metric/web")
+require_relative("lib/internal_metric/custom")
+
+require_relative("lib/reporter/process")
+require_relative("lib/reporter/global")
+require_relative("lib/reporter/web")
+
+require_relative("lib/collector_demon")
+require_relative("lib/global_reporter_demon")
+
 require_relative("lib/middleware/metrics")
+
+GlobalSetting.add_default :prometheus_collector_port, 9405
+GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
+DiscoursePluginRegistry.define_filtered_register :global_collectors
+
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
-  %w(
-    ../lib/internal_metric/base
-    ../lib/internal_metric/global
-    ../lib/internal_metric/job
-    ../lib/internal_metric/process
-    ../lib/internal_metric/web
-    ../lib/internal_metric/custom
-    ../lib/reporter/process
-    ../lib/reporter/global
-    ../lib/reporter/web
-    ../lib/collector_demon
-    ../lib/global_reporter_demon
-  ).each do |path|
-    require File.expand_path(path, __FILE__)
-  end
-
-  GlobalSetting.add_default :prometheus_collector_port, 9405
-  GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
-  DiscoursePluginRegistry.define_filtered_register :global_collectors
-
-  require 'prometheus_exporter/client'
-
   $prometheus_client = PrometheusExporter::Client.new(
     host: 'localhost',
     port: GlobalSetting.prometheus_collector_port

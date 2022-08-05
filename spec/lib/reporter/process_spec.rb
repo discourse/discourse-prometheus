@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'prometheus_exporter/server'
+require_relative '../../../lib/collector'
 
 module DiscoursePrometheus
   describe Reporter::Process do
@@ -22,6 +24,50 @@ module DiscoursePrometheus
       check_for(metric, :heap_live_slots, :heap_free_slots, :major_gc_count,
         :minor_gc_count, :total_allocated_objects, :v8_heap_size,
         :v8_heap_count, :v8_physical_size, :pid, :rss, :thread_count)
+    end
+
+    context "job_exception_stats" do
+      before do
+        Discourse.reset_job_exception_stats!
+      end
+
+      after do
+        Discourse.reset_job_exception_stats!
+      end
+
+      it "can collect job_exception_stats" do
+
+        # see MiniScheduler Manager which reports it like this
+        # https://github.com/discourse/mini_scheduler/blob/2b2c1c56b6e76f51108c2a305775469e24cf2b65/lib/mini_scheduler/manager.rb#L95
+        exception_context = {
+          message: "Running a scheduled job",
+          job: { "class" => Jobs::ReindexSearch }
+        }
+
+        2.times do
+          expect {
+            Discourse.handle_job_exception(StandardError.new, exception_context)
+          }.to raise_error(StandardError)
+        end
+
+        metric = Reporter::Process.new(:web).collect
+        expect(metric.scheduled_job_failures).to eq({
+          { "job" => "Jobs::ReindexSearch" } => 2
+        })
+
+        collector = DiscoursePrometheus::Collector.new
+        collector.process(metric.to_json)
+
+        metric = collector.prometheus_metrics.find { |m| m.name == "scheduled_job_failures" }
+
+        expect(metric.data).to eq({
+          {
+            type: "web",
+            pid: Process.pid,
+            "job" => "Jobs::ReindexSearch"
+          } => 2 })
+      end
+
     end
 
     it "can collect failover data" do

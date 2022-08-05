@@ -47,6 +47,16 @@ module DiscoursePrometheus::Reporter
 
     def collect_scheduler_stats(metric)
       metric.deferred_jobs_queued = Scheduler::Defer.length
+
+      if Discourse.respond_to?(:job_exception_stats)
+        failures = {}
+        Discourse.job_exception_stats.each do |klass, count|
+          failures[{ "job" => klass.to_s }] = count
+        end
+        metric.scheduled_job_failures = failures
+      else
+        metric.scheduled_job_failures = {}
+      end
     end
 
     def collect_process_stats(metric)

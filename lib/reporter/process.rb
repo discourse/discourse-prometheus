@@ -47,6 +47,22 @@ module DiscoursePrometheus::Reporter
 
     def collect_scheduler_stats(metric)
       metric.deferred_jobs_queued = Scheduler::Defer.length
+
+      metric.job_failures = {}
+
+      if Discourse.respond_to?(:job_exception_stats)
+        Discourse.job_exception_stats.each do |klass, count|
+          key = { "job" => klass.to_s }
+          if klass.class == Class && klass < ::Jobs::Scheduled
+            key["family"] = "scheduled"
+          else
+            # this is a guess, but regular jobs simply inherit off
+            # Jobs::Base, so there is no easy way of finding out
+            key["family"] = "regular"
+          end
+          metric.job_failures[key] = count
+        end
+      end
     end
 
     def collect_process_stats(metric)

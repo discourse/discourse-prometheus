@@ -22,6 +22,7 @@ module DiscoursePrometheus::InternalMetric
       major_gc_count: "Major GC operations by process",
       minor_gc_count: "Minor GC operations by process",
       total_allocated_objects: "Total number of allocateds objects by process",
+      job_failures: "Number of scheduled and regular jobs that failed in a process"
     }
 
     attribute :type,
@@ -41,7 +42,8 @@ module DiscoursePrometheus::InternalMetric
       :deferred_jobs_queued,
       :active_record_connections_count,
       :active_record_failover_count,
-      :redis_failover_count
+      :redis_failover_count,
+      :job_failures
 
     def initialize
       @active_record_connections_count = {}

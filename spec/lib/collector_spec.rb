@@ -83,6 +83,47 @@ module DiscoursePrometheus
       expect(ar.data[type: 'web', pid: Process.pid, status: "busy"]).to be > 0
     end
 
+    context "job_exception_stats" do
+      before do
+        Discourse.reset_job_exception_stats!
+      end
+
+      after do
+        Discourse.reset_job_exception_stats!
+      end
+
+      it "can collect job_exception_stats" do
+
+        # see MiniScheduler Manager which reports it like this
+        # https://github.com/discourse/mini_scheduler/blob/2b2c1c56b6e76f51108c2a305775469e24cf2b65/lib/mini_scheduler/manager.rb#L95
+        exception_context = {
+          message: "Running a scheduled job",
+          job: { "class" => Jobs::ReindexSearch }
+        }
+
+        2.times do
+          expect {
+            Discourse.handle_job_exception(StandardError.new, exception_context)
+          }.to raise_error(StandardError)
+        end
+
+        metric = Reporter::Process.new(:web).collect
+
+        collector = DiscoursePrometheus::Collector.new
+        collector.process(metric.to_json)
+
+        metric = collector.prometheus_metrics.find { |m| m.name == "job_failures" }
+
+        expect(metric.data).to eq({
+          {
+            "family" => "scheduled",
+            type: "web",
+            pid: Process.pid,
+            "job" => "Jobs::ReindexSearch"
+          } => 2 })
+      end
+    end
+
     it "Can expire old metrics" do
       collector = Collector.new
 

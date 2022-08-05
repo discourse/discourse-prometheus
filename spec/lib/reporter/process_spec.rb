@@ -24,6 +24,37 @@ module DiscoursePrometheus
         :v8_heap_count, :v8_physical_size, :pid, :rss, :thread_count)
     end
 
+    context "job_exception_stats" do
+      before do
+        Discourse.reset_job_exception_stats!
+      end
+
+      after do
+        Discourse.reset_job_exception_stats!
+      end
+
+      it "can collect job_exception_stats" do
+
+        # see MiniScheduler Manager which reports it like this
+        # https://github.com/discourse/mini_scheduler/blob/2b2c1c56b6e76f51108c2a305775469e24cf2b65/lib/mini_scheduler/manager.rb#L95
+        exception_context = {
+          message: "Running a scheduled job",
+          job: { "class" => Jobs::ReindexSearch }
+        }
+
+        2.times do
+          expect {
+            Discourse.handle_job_exception(StandardError.new, exception_context)
+          }.to raise_error(StandardError)
+        end
+
+        metric = Reporter::Process.new(:web).collect
+        expect(metric.job_failures).to eq({
+          { "job" => "Jobs::ReindexSearch", "family" => "scheduled" } => 2
+        })
+      end
+    end
+
     it "can collect failover data" do
       metric = Reporter::Process.new(:web).collect
 

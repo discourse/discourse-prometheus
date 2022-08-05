@@ -347,6 +347,22 @@ module ::DiscoursePrometheus
 
     end
 
+    def report_metric(instrument, metric, key)
+      values = metric.send(key)
+      if values.nil? || values == {}
+        return
+      end
+      default_labels = { type: metric.type, pid: metric.pid }
+
+      if values.is_a?(Hash)
+        values.each do |labels, value|
+          instrument.observe(value, default_labels.merge(labels))
+        end
+      else
+        instrument.observe(values, default_labels)
+      end
+    end
+
     def process_metrics
       # this are only calculated when we ask for them on the fly
       return [] if @process_metrics.length == 0
@@ -355,23 +371,14 @@ module ::DiscoursePrometheus
         gauge = Gauge.new(key.to_s, name)
         metrics << gauge
         @process_metrics.each do |metric|
-          values = metric.send(key)
-          default_labels = { type: metric.type, pid: metric.pid }
-
-          if values.is_a?(Hash)
-            values.each do |labels, value|
-              gauge.observe(value, default_labels.merge(labels))
-            end
-          else
-            gauge.observe(values, default_labels)
-          end
+          report_metric(gauge, metric, key)
         end
       end
       InternalMetric::Process::COUNTERS.each do |key, name|
         counter = Counter.new(key.to_s, name)
         metrics << counter
         @process_metrics.each do |metric|
-          counter.observe(metric.send(key), type: metric.type, pid: metric.pid)
+          report_metric(counter, metric, key)
         end
       end
       metrics

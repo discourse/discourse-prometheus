@@ -54,7 +54,6 @@ module DiscoursePrometheus::Reporter
         Discourse.job_exception_stats.each do |klass, count|
           metric.job_failures[{ "job" => klass.to_s }] = count
         end
-        metric.job_failures = failures
       end
     end
 

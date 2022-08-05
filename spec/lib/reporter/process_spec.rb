@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
-require 'prometheus_exporter/server'
-require_relative '../../../lib/collector'
 
 module DiscoursePrometheus
   describe Reporter::Process do
@@ -51,23 +49,10 @@ module DiscoursePrometheus
         end
 
         metric = Reporter::Process.new(:web).collect
-        expect(metric.scheduled_job_failures).to eq({
+        expect(metric.job_failures).to eq({
           { "job" => "Jobs::ReindexSearch" } => 2
         })
-
-        collector = DiscoursePrometheus::Collector.new
-        collector.process(metric.to_json)
-
-        metric = collector.prometheus_metrics.find { |m| m.name == "scheduled_job_failures" }
-
-        expect(metric.data).to eq({
-          {
-            type: "web",
-            pid: Process.pid,
-            "job" => "Jobs::ReindexSearch"
-          } => 2 })
       end
-
     end
 
     it "can collect failover data" do

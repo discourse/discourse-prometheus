@@ -116,6 +116,7 @@ module DiscoursePrometheus
 
         expect(metric.data).to eq({
           {
+            "family" => "scheduled",
             type: "web",
             pid: Process.pid,
             "job" => "Jobs::ReindexSearch"

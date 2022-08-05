@@ -50,7 +50,7 @@ module DiscoursePrometheus
 
         metric = Reporter::Process.new(:web).collect
         expect(metric.job_failures).to eq({
-          { "job" => "Jobs::ReindexSearch" } => 2
+          { "job" => "Jobs::ReindexSearch", "family" => "scheduled" } => 2
         })
       end
     end

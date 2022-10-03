@@ -41,7 +41,7 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.tracked).to eq(nil)
     end
 
-    context "from_env_data" do
+    describe "from_env_data" do
       it "Can get controller/action" do
         env = {
           "action_dispatch.request.parameters" => { "controller" => 'con', "action" => 'act' }

@@ -24,7 +24,7 @@ module DiscoursePrometheus
         :v8_heap_count, :v8_physical_size, :pid, :rss, :thread_count)
     end
 
-    context "job_exception_stats" do
+    describe "job_exception_stats" do
       before do
         Discourse.reset_job_exception_stats!
       end

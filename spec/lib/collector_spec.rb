@@ -83,7 +83,7 @@ module DiscoursePrometheus
       expect(ar.data[type: 'web', pid: Process.pid, status: "busy"]).to be > 0
     end
 
-    context "job_exception_stats" do
+    describe "job_exception_stats" do
       before do
         Discourse.reset_job_exception_stats!
       end

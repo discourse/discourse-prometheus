@@ -67,6 +67,25 @@ module DiscoursePrometheus
       expect(count.data).to eq({ job_name: "Bob" } => 1)
     end
 
+    it "Can handle job initialization metrics" do
+      collector = Collector.new
+      metric = InternalMetric::Job.new
+
+      metric.scheduled = true
+      metric.job_name = "Bob"
+      metric.count = 0
+      metric.duration = 0
+
+      collector.process(metric.to_json)
+      metrics = collector.prometheus_metrics
+
+      duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
+      count = metrics.find { |m| m.name == "scheduled_job_count" }
+
+      expect(duration.data).to eq({ job_name: "Bob" } => 0)
+      expect(count.data).to eq({ job_name: "Bob" } => 0)
+    end
+
     it "Can handle process metrics" do
       skip("skipped because /proc does not exist on macOS") if RbConfig::CONFIG["arch"] =~ /darwin/
       collector = Collector.new

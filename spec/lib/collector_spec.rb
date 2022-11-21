@@ -56,6 +56,7 @@ module DiscoursePrometheus
       metric.scheduled = true
       metric.job_name = "Bob"
       metric.duration = 1.778
+      metric.count = 1
 
       collector.process(metric.to_json)
       metrics = collector.prometheus_metrics

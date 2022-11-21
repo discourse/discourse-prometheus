@@ -10,11 +10,13 @@ module DiscoursePrometheus::InternalMetric
       job.job_name = "bob"
       job.scheduled = true
       job.duration = 100.1
+      job.count = 1
 
       expect(job.to_h).to eq(
         job_name: "bob",
         scheduled: true,
         duration: 100.1,
+        count: 1,
         _type: "Job"
       )
     end

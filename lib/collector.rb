@@ -206,10 +206,10 @@ module ::DiscoursePrometheus
       }
       if metric.scheduled
         @scheduled_job_duration_seconds.observe(metric.duration, hash)
-        @scheduled_job_count.observe(1, hash)
+        @scheduled_job_count.observe(metric.count, hash)
       else
         @sidekiq_job_duration_seconds.observe(metric.duration, hash)
-        @sidekiq_job_count.observe(1, hash)
+        @sidekiq_job_count.observe(metric.count, hash)
       end
     end
 

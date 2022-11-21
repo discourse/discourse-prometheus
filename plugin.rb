@@ -29,6 +29,8 @@ require_relative("lib/global_reporter_demon")
 
 require_relative("lib/middleware/metrics")
 
+require_relative("lib/job_metric_initializer")
+
 GlobalSetting.add_default :prometheus_collector_port, 9405
 GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
 DiscoursePluginRegistry.define_filtered_register :global_collectors
@@ -49,6 +51,8 @@ after_initialize do
 
   on(:sidekiq_fork_started) do
     DiscoursePrometheus::Reporter::Process.start($prometheus_client, :sidekiq)
+    DiscoursePrometheus::JobMetricInitializer.initialize_regular_job_metrics
+    DiscoursePrometheus::JobMetricInitializer.initialize_scheduled_job_metrics
   end
 
   on(:web_fork_started) do
@@ -60,6 +64,7 @@ after_initialize do
     metric.scheduled = true
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
+    metric.count = 1
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 
@@ -67,6 +72,7 @@ after_initialize do
     metric = DiscoursePrometheus::InternalMetric::Job.new
     metric.scheduled = false
     metric.duration = duration
+    metric.count = 1
     metric.job_name = worker.class.to_s
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end

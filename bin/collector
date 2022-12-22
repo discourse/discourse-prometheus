@@ -27,7 +27,7 @@ require_relative '../lib/internal_metric/custom'
 require_relative '../lib/collector'
 
 $port = ARGV[0].to_i
-$bind = ARGV[1]
+bind = ARGV[1]
 $parent_pid = ARGV[2].to_i
 $pid_file = ARGV[3]
 
@@ -62,7 +62,7 @@ end
 PrometheusExporter::Metric::Base.default_prefix = 'discourse_'
 
 collector = DiscoursePrometheus::Collector.new
-server = PrometheusExporter::Server::WebServer.new port: $port, bind: $bind, collector: collector
+server = PrometheusExporter::Server::WebServer.new port: $port, bind: bind, collector: collector
 
 server.start
 

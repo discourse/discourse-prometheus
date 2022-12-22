@@ -33,6 +33,7 @@ require_relative("lib/middleware/metrics")
 require_relative("lib/job_metric_initializer")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
+GlobalSetting.add_default :prometheus_webserver_bind, 'localhost'
 GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
 DiscoursePluginRegistry.define_filtered_register :global_collectors
 

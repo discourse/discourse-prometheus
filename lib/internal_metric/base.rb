@@ -2,7 +2,6 @@
 
 module DiscoursePrometheus::InternalMetric
   class Base
-
     def self.attribute(*names)
       (@attrs ||= []).concat(names)
       attr_accessor(*names)
@@ -46,9 +45,7 @@ module DiscoursePrometheus::InternalMetric
     end
 
     def to_h
-      hash = Hash[
-        *self.class.attributes.map { |a| [a, send(a)] }.flatten
-      ]
+      hash = Hash[*self.class.attributes.map { |a| [a, send(a)] }.flatten]
 
       # for perf, this is called alot
       type =
@@ -70,6 +67,5 @@ module DiscoursePrometheus::InternalMetric
       hash[:_type] = type
       hash
     end
-
   end
 end

@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
-require 'prometheus_exporter/server'
-require_relative '../../lib/collector'
+require "rails_helper"
+require "prometheus_exporter/server"
+require_relative "../../lib/collector"
 
 module DiscoursePrometheus
   describe Collector do
-
     it "Can process custom metrics" do
       collector = Collector.new
 
@@ -100,25 +99,22 @@ module DiscoursePrometheus
 
       ar = metrics.find { |metric| metric.name == "active_record_connections_count" }
 
-      expect(ar.data[type: 'web', pid: Process.pid, status: "busy"]).to be > 0
+      expect(ar.data[type: "web", pid: Process.pid, status: "busy"]).to be > 0
     end
 
     describe "job_exception_stats" do
-      before do
-        Discourse.reset_job_exception_stats!
-      end
+      before { Discourse.reset_job_exception_stats! }
 
-      after do
-        Discourse.reset_job_exception_stats!
-      end
+      after { Discourse.reset_job_exception_stats! }
 
       it "can collect job_exception_stats" do
-
         # see MiniScheduler Manager which reports it like this
         # https://github.com/discourse/mini_scheduler/blob/2b2c1c56b6e76f51108c2a305775469e24cf2b65/lib/mini_scheduler/manager.rb#L95
         exception_context = {
           message: "Running a scheduled job",
-          job: { "class" => Jobs::ReindexSearch }
+          job: {
+            "class" => Jobs::ReindexSearch,
+          },
         }
 
         2.times do
@@ -134,13 +130,17 @@ module DiscoursePrometheus
 
         metric = collector.prometheus_metrics.find { |m| m.name == "job_failures" }
 
-        expect(metric.data).to eq({
+        expect(metric.data).to eq(
           {
-            "family" => "scheduled",
-            type: "web",
-            pid: Process.pid,
-            "job" => "Jobs::ReindexSearch"
-          } => 2 })
+            {
+              "family" => "scheduled",
+              :type => "web",
+              :pid => Process.pid,
+              "job" => "Jobs::ReindexSearch",
+            } =>
+              2,
+          },
+        )
       end
     end
 
@@ -177,17 +177,51 @@ module DiscoursePrometheus
       metrics = []
       metrics << InternalMetric::Web.get(tracked: true, verb: "GET", status_code: 200, db: "bob")
       metrics << InternalMetric::Web.get(tracked: true, verb: "GET", status_code: 200, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", logged_in: true, status_code: 200, db: "bill")
-      metrics << InternalMetric::Web.get(tracked: true, verb: "GET", mobile: true, status_code: 200, db: "jake")
-      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", status_code: 200, db: "bob", user_api: true)
-      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", status_code: 300, db: "bob", admin_api: true)
-      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", background: true, status_code: 418, db: "bob")
-      metrics << InternalMetric::Web.get(tracked: false, verb: "GET", background: true, status_code: 200, db: "bob")
+      metrics << InternalMetric::Web.get(
+        tracked: true,
+        verb: "GET",
+        logged_in: true,
+        status_code: 200,
+        db: "bill",
+      )
+      metrics << InternalMetric::Web.get(
+        tracked: true,
+        verb: "GET",
+        mobile: true,
+        status_code: 200,
+        db: "jake",
+      )
+      metrics << InternalMetric::Web.get(
+        tracked: false,
+        verb: "GET",
+        status_code: 200,
+        db: "bob",
+        user_api: true,
+      )
+      metrics << InternalMetric::Web.get(
+        tracked: false,
+        verb: "GET",
+        status_code: 300,
+        db: "bob",
+        admin_api: true,
+      )
+      metrics << InternalMetric::Web.get(
+        tracked: false,
+        verb: "GET",
+        background: true,
+        status_code: 418,
+        db: "bob",
+      )
+      metrics << InternalMetric::Web.get(
+        tracked: false,
+        verb: "GET",
+        background: true,
+        status_code: 200,
+        db: "bob",
+      )
 
       collector = Collector.new
-      metrics.each do |metric|
-        collector.process(metric.to_json)
-      end
+      metrics.each { |metric| collector.process(metric.to_json) }
 
       exported = collector.prometheus_metrics
 
@@ -196,7 +230,7 @@ module DiscoursePrometheus
       expected = {
         { db: "bob", type: "anon", device: "desktop" } => 2,
         { db: "bill", type: "logged_in", device: "desktop" } => 1,
-        { db: "jake", type: "anon", device: "mobile" } => 1
+        { db: "jake", type: "anon", device: "mobile" } => 1,
       }
 
       expect(page_views.data).to eq(expected)
@@ -209,7 +243,7 @@ module DiscoursePrometheus
         { db: "bob", api: "user", verb: "GET", type: "regular", status: 200 } => 1,
         { db: "bob", api: "admin", verb: "GET", type: "regular", status: 300 } => 1,
         { db: "bob", api: "web", verb: "GET", type: "background", status: "-1" } => 1,
-        { db: "bob", api: "web", verb: "GET", type: "background", status: 200 } => 1
+        { db: "bob", api: "web", verb: "GET", type: "background", status: 200 } => 1,
       }
       expect(http_requests.data).to eq(expected)
     end

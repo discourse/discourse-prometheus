@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 module DiscoursePrometheus
   describe Reporter::Process do
@@ -17,29 +17,37 @@ module DiscoursePrometheus
 
       metric = Reporter::Process.new(:web).collect
 
-      expect(metric.type).to eq('web')
+      expect(metric.type).to eq("web")
 
-      check_for(metric, :heap_live_slots, :heap_free_slots, :major_gc_count,
-        :minor_gc_count, :total_allocated_objects, :v8_heap_size,
-        :v8_heap_count, :v8_physical_size, :pid, :rss, :thread_count)
+      check_for(
+        metric,
+        :heap_live_slots,
+        :heap_free_slots,
+        :major_gc_count,
+        :minor_gc_count,
+        :total_allocated_objects,
+        :v8_heap_size,
+        :v8_heap_count,
+        :v8_physical_size,
+        :pid,
+        :rss,
+        :thread_count,
+      )
     end
 
     describe "job_exception_stats" do
-      before do
-        Discourse.reset_job_exception_stats!
-      end
+      before { Discourse.reset_job_exception_stats! }
 
-      after do
-        Discourse.reset_job_exception_stats!
-      end
+      after { Discourse.reset_job_exception_stats! }
 
       it "can collect job_exception_stats" do
-
         # see MiniScheduler Manager which reports it like this
         # https://github.com/discourse/mini_scheduler/blob/2b2c1c56b6e76f51108c2a305775469e24cf2b65/lib/mini_scheduler/manager.rb#L95
         exception_context = {
           message: "Running a scheduled job",
-          job: { "class" => Jobs::ReindexSearch }
+          job: {
+            "class" => Jobs::ReindexSearch,
+          },
         }
 
         2.times do
@@ -49,9 +57,9 @@ module DiscoursePrometheus
         end
 
         metric = Reporter::Process.new(:web).collect
-        expect(metric.job_failures).to eq({
-          { "job" => "Jobs::ReindexSearch", "family" => "scheduled" } => 2
-        })
+        expect(metric.job_failures).to eq(
+          { { "job" => "Jobs::ReindexSearch", "family" => "scheduled" } => 2 },
+        )
       end
     end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 module DiscoursePrometheus::InternalMetric
   describe Custom do
@@ -11,7 +11,7 @@ module DiscoursePrometheus::InternalMetric
         description: "Total number of posts",
         type: "Gauge",
         value: 120,
-        _type: "Custom"
+        _type: "Custom",
       }
     end
 

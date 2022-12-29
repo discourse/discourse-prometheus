@@ -1,28 +1,29 @@
 # frozen_string_literal: true
 
-require 'ipaddr'
+require "ipaddr"
 
 module DiscoursePrometheus
-  module Middleware; end
+  module Middleware
+  end
   class Middleware::Metrics
-
     def initialize(app, settings = {})
       @app = app
     end
 
     def call(env)
-      if intercept?(env)
-        metrics(env)
-      else
-        @app.call(env)
-      end
+      intercept?(env) ? metrics(env) : @app.call(env)
     end
 
     private
 
     def is_private_ip?(env)
       request = Rack::Request.new(env)
-      ip = IPAddr.new(request.ip) rescue nil
+      ip =
+        begin
+          IPAddr.new(request.ip)
+        rescue StandardError
+          nil
+        end
       !!(ip && (ip.private? || ip.loopback?))
     end
 
@@ -34,7 +35,11 @@ module DiscoursePrometheus
         ip = IPAddr.new(request.ip)
       rescue => e
         # failed to parse regex
-        Discourse.warn_exception(e, message: "Error parsing prometheus trusted ip whitelist", env: env)
+        Discourse.warn_exception(
+          e,
+          message: "Error parsing prometheus trusted ip whitelist",
+          env: env,
+        )
       end
       !!(trusted_ip_regex && ip && ip.to_s =~ trusted_ip_regex)
     end
@@ -57,12 +62,13 @@ module DiscoursePrometheus
     end
 
     def metrics(env)
-      data = Net::HTTP.get(URI("http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics"))
-      [200, {
-         "Content-Type" => "text/plain; charset=utf-8",
-         "Content-Length" => data.bytesize.to_s
-       }, [data]]
+      data =
+        Net::HTTP.get(URI("http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics"))
+      [
+        200,
+        { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => data.bytesize.to_s },
+        [data],
+      ]
     end
-
   end
 end

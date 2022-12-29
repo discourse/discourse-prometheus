@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 #
-require 'middleware/request_tracker'
+require "middleware/request_tracker"
 
 class DiscoursePrometheus::Reporter::Web
-
   attr_reader :client
 
   def self.start(client)
     instance = self.new(client)
-    Middleware::RequestTracker.register_detailed_request_logger(lambda do |env, data|
-      instance.report(env, data)
-    end)
+    Middleware::RequestTracker.register_detailed_request_logger(
+      lambda { |env, data| instance.report(env, data) },
+    )
   end
 
   def initialize(client)
@@ -25,8 +24,6 @@ class DiscoursePrometheus::Reporter::Web
   end
 
   def log_prom_later(metric)
-    Scheduler::Defer.later("Prom stats", _db = nil) do
-      @client.send_json metric
-    end
+    Scheduler::Defer.later("Prom stats", _db = nil) { @client.send_json metric }
   end
 end

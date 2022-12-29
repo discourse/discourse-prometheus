@@ -2,11 +2,11 @@
 
 module DiscoursePrometheus
   class NullMetric < ::DiscoursePrometheus::InternalMetric::Custom
-    attribute :name , :labels, :description, :value, :type
+    attribute :name, :labels, :description, :value, :type
 
     def initialize
-      @name = 'null_metric'
-      @description = 'Testing'
+      @name = "null_metric"
+      @description = "Testing"
       @type = "Gauge"
     end
 

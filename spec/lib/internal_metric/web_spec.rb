@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 module DiscoursePrometheus::InternalMetric
   describe Web do
@@ -44,13 +44,16 @@ module DiscoursePrometheus::InternalMetric
     describe "from_env_data" do
       it "Can get controller/action" do
         env = {
-          "action_dispatch.request.parameters" => { "controller" => 'con', "action" => 'act' }
+          "action_dispatch.request.parameters" => {
+            "controller" => "con",
+            "action" => "act",
+          },
         }
 
         metric = Web.from_env_data(env, {}, "")
 
-        expect(metric.controller).to eq('con')
-        expect(metric.action).to eq('act')
+        expect(metric.controller).to eq("con")
+        expect(metric.action).to eq("act")
       end
 
       it "Can fish out logged data from discourse" do
@@ -60,7 +63,7 @@ module DiscoursePrometheus::InternalMetric
           has_auth_cookie: true,
           is_background: nil,
           is_mobile: true,
-          track_view: true
+          track_view: true,
         }
 
         metric = Web.from_env_data({}, data, "test")
@@ -75,9 +78,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       it "Can figure out if it is an ajax call" do
-        env = {
-          "HTTP_X_REQUESTED_WITH" => "XMLHttpRequest"
-        }
+        env = { "HTTP_X_REQUESTED_WITH" => "XMLHttpRequest" }
 
         metric = Web.from_env_data(env, {}, "")
 
@@ -85,9 +86,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       it "Can detect json requests" do
-        env = {
-          "PATH_INFO" => "/test.json"
-        }
+        env = { "PATH_INFO" => "/test.json" }
 
         metric = Web.from_env_data(env, {}, "")
 
@@ -95,9 +94,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       it "Can detect json requests from header" do
-        env = {
-          "HTTP_ACCEPT" => "application/json, text/javascript, */*; q=0.01"
-        }
+        env = { "HTTP_ACCEPT" => "application/json, text/javascript, */*; q=0.01" }
 
         metric = Web.from_env_data(env, {}, "")
 
@@ -105,17 +102,13 @@ module DiscoursePrometheus::InternalMetric
       end
 
       it "Can detect request method" do
-        env = {
-          "REQUEST_METHOD" => "GET"
-        }
+        env = { "REQUEST_METHOD" => "GET" }
 
         metric = Web.from_env_data(env, {}, "")
 
         expect(metric.verb).to eq("GET")
 
-        env = {
-          "REQUEST_METHOD" => "TEST"
-        }
+        env = { "REQUEST_METHOD" => "TEST" }
 
         metric = Web.from_env_data(env, {}, "")
 
@@ -126,9 +119,15 @@ module DiscoursePrometheus::InternalMetric
         data = {
           timing: {
             total_duration: 0.1,
-            sql: { duration: 0.2, calls: 5 },
-            redis: { duration: 0.3, calls: 6 }
-          }
+            sql: {
+              duration: 0.2,
+              calls: 5,
+            },
+            redis: {
+              duration: 0.3,
+              calls: 6,
+            },
+          },
         }
 
         metric = Web.from_env_data({}, data, "")

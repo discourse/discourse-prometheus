@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-require_dependency 'demon/base'
+require_dependency "demon/base"
 
 class DiscoursePrometheus::CollectorDemon < ::Demon::Base
   def self.prefix
@@ -18,6 +18,10 @@ class DiscoursePrometheus::CollectorDemon < ::Demon::Base
     ENV["RUBY_GLOBAL_METHOD_CACHE_SIZE"] = "2048"
     ENV["RUBY_GC_HEAP_INIT_SLOTS"] = "10000"
 
-    exec collector, GlobalSetting.prometheus_collector_port.to_s, GlobalSetting.prometheus_webserver_bind, parent_pid.to_s, pid_file
+    exec collector,
+         GlobalSetting.prometheus_collector_port.to_s,
+         GlobalSetting.prometheus_webserver_bind,
+         parent_pid.to_s,
+         pid_file
   end
 end

@@ -1,33 +1,32 @@
 # frozen_string_literal: true
 
-require 'raindrops'
-require 'sidekiq/api'
-require 'open3'
+require "raindrops"
+require "sidekiq/api"
+require "open3"
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base
-
     STUCK_SIDEKIQ_JOB_MINUTES = 120
 
     attribute :postgres_readonly_mode,
-      :redis_master_available,
-      :redis_slave_available,
-      :redis_primary_available,
-      :redis_replica_available,
-      :postgres_master_available,
-      :postgres_primary_available,
-      :postgres_replica_available,
-      :active_app_reqs,
-      :queued_app_reqs,
-      :sidekiq_jobs_enqueued,
-      :sidekiq_processes,
-      :sidekiq_paused,
-      :sidekiq_workers,
-      :sidekiq_jobs_stuck,
-      :scheduled_jobs_stuck,
-      :missing_s3_uploads,
-      :version_info,
-      :readonly_sites
+              :redis_master_available,
+              :redis_slave_available,
+              :redis_primary_available,
+              :redis_replica_available,
+              :postgres_master_available,
+              :postgres_primary_available,
+              :postgres_replica_available,
+              :active_app_reqs,
+              :queued_app_reqs,
+              :sidekiq_jobs_enqueued,
+              :sidekiq_processes,
+              :sidekiq_paused,
+              :sidekiq_workers,
+              :sidekiq_jobs_stuck,
+              :scheduled_jobs_stuck,
+              :missing_s3_uploads,
+              :version_info,
+              :readonly_sites
 
     def initialize
       @active_app_reqs = 0
@@ -37,7 +36,7 @@ module DiscoursePrometheus::InternalMetric
       begin
         @@version = nil
 
-        out, error, status = Open3.capture3('git rev-parse HEAD')
+        out, error, status = Open3.capture3("git rev-parse HEAD")
 
         if status.success?
           @@version ||= out.chomp
@@ -53,39 +52,59 @@ module DiscoursePrometheus::InternalMetric
 
         @@retries ||= 10
         @@retries -= 1
-        if @@retries < 0
-          @@version = -1
-        end
+        @@version = -1 if @@retries < 0
       end
     end
 
     def collect
-      @version_info ||= {
-        { revision: @@version, version: Discourse::VERSION::STRING } => 1
-      }
+      @version_info ||= { { revision: @@version, version: Discourse::VERSION::STRING } => 1 }
 
       redis_primary_running = {}
       redis_replica_running = {}
 
       redis_config = GlobalSetting.redis_config
-      redis_primary_running[{ type: 'main' }] = test_redis(:master, host: redis_config[:host], port: redis_config[:port], password: redis_config[:password], ssl: redis_config[:ssl])
-      redis_replica_running[{ type: 'main' }] = 0
+      redis_primary_running[{ type: "main" }] = test_redis(
+        :master,
+        host: redis_config[:host],
+        port: redis_config[:port],
+        password: redis_config[:password],
+        ssl: redis_config[:ssl],
+      )
+      redis_replica_running[{ type: "main" }] = 0
 
       if redis_config[:replica_host]
-        redis_replica_running[{ type: 'main' }] = test_redis(:slave, host: redis_config[:replica_host], port: redis_config[:replica_port], password: redis_config[:password], ssl: redis_config[:ssl])
+        redis_replica_running[{ type: "main" }] = test_redis(
+          :slave,
+          host: redis_config[:replica_host],
+          port: redis_config[:replica_port],
+          password: redis_config[:password],
+          ssl: redis_config[:ssl],
+        )
       else
-        redis_replica_running[{ type: 'main' }] = 0
+        redis_replica_running[{ type: "main" }] = 0
       end
 
       if GlobalSetting.message_bus_redis_enabled
         mb_redis_config = GlobalSetting.message_bus_redis_config
-        redis_primary_running[{ type: 'message-bus' }] = test_redis(:master, host: mb_redis_config[:host], port: mb_redis_config[:port], password: mb_redis_config[:password], ssl: mb_redis_config[:ssl])
-        redis_replica_running[{ type: 'message-bus' }] = 0
+        redis_primary_running[{ type: "message-bus" }] = test_redis(
+          :master,
+          host: mb_redis_config[:host],
+          port: mb_redis_config[:port],
+          password: mb_redis_config[:password],
+          ssl: mb_redis_config[:ssl],
+        )
+        redis_replica_running[{ type: "message-bus" }] = 0
 
         if mb_redis_config[:replica_host]
-          redis_replica_running[{ type: 'message-bus' }] = test_redis(:slave, host: mb_redis_config[:replica_host], port: mb_redis_config[:replica_port], password: mb_redis_config[:password], ssl: mb_redis_config[:ssl])
+          redis_replica_running[{ type: "message-bus" }] = test_redis(
+            :slave,
+            host: mb_redis_config[:replica_host],
+            port: mb_redis_config[:replica_port],
+            password: mb_redis_config[:password],
+            ssl: mb_redis_config[:ssl],
+          )
         else
-          redis_replica_running[{ type: 'message-bus' }] = 0
+          redis_replica_running[{ type: "message-bus" }] = 0
         end
       end
 
@@ -96,9 +115,9 @@ module DiscoursePrometheus::InternalMetric
 
       if RbConfig::CONFIG["arch"] !~ /darwin/
         if listener = ENV["UNICORN_LISTENER"]
-          net_stats = Raindrops::Linux::unix_listener_stats([listener])[listener]
+          net_stats = Raindrops::Linux.unix_listener_stats([listener])[listener]
         else
-          net_stats = Raindrops::Linux::tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
+          net_stats = Raindrops::Linux.tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
         end
       end
 
@@ -112,27 +131,31 @@ module DiscoursePrometheus::InternalMetric
       @active_app_reqs = [@active_app_reqs, net_stats.active].max if net_stats
       @queued_app_reqs = [@queued_app_reqs, net_stats.queued].max if net_stats
 
-      @sidekiq_jobs_enqueued = begin
-        stats = {}
+      @sidekiq_jobs_enqueued =
+        begin
+          stats = {}
 
-        Sidekiq::Stats.new.queues.each do |queue_name, queue_count|
-          stats[{ queue: queue_name }] = queue_count
+          Sidekiq::Stats.new.queues.each do |queue_name, queue_count|
+            stats[{ queue: queue_name }] = queue_count
+          end
+
+          stats
         end
-
-        stats
-      end
 
       hostname = ::PrometheusExporter.hostname
 
       @sidekiq_processes = 0
-      @sidekiq_workers = Sidekiq::ProcessSet.new(false).sum do |process|
-        if process["hostname"] == hostname
-          @sidekiq_processes += 1
-          process["concurrency"]
-        else
-          0
-        end
-      end
+      @sidekiq_workers =
+        Sidekiq::ProcessSet
+          .new(false)
+          .sum do |process|
+            if process["hostname"] == hostname
+              @sidekiq_processes += 1
+              process["concurrency"]
+            else
+              0
+            end
+          end
 
       @sidekiq_jobs_stuck = find_stuck_sidekiq_jobs
       @scheduled_jobs_stuck = find_stuck_scheduled_jobs
@@ -165,15 +188,9 @@ module DiscoursePrometheus::InternalMetric
     end
 
     def primary_site_readonly?
-      if !defined?(Discourse::PG_READONLY_MODE_KEY)
-        return 1
-      end
-      if Discourse.redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}")
-        1
-      else
-        0
-      end
-    rescue
+      return 1 if !defined?(Discourse::PG_READONLY_MODE_KEY)
+      Discourse.redis.without_namespace.get("default:#{Discourse::PG_READONLY_MODE_KEY}") ? 1 : 0
+    rescue StandardError
       0
     end
 
@@ -182,10 +199,7 @@ module DiscoursePrometheus::InternalMetric
 
       unless primary
         if config[:replica_host]
-          config = config.dup.merge(
-            host: config[:replica_host],
-            port: config[:replica_port]
-          )
+          config = config.dup.merge(host: config[:replica_host], port: config[:replica_port])
         else
           return nil
         end
@@ -193,7 +207,7 @@ module DiscoursePrometheus::InternalMetric
 
       connection = ActiveRecord::Base.postgresql_connection(config)
       connection.active? ? 1 : 0
-    rescue
+    rescue StandardError
       0
     ensure
       connection&.disconnect!
@@ -206,7 +220,7 @@ module DiscoursePrometheus::InternalMetric
       else
         0
       end
-    rescue
+    rescue StandardError
       0
     ensure
       test_connection&.close
@@ -234,17 +248,23 @@ module DiscoursePrometheus::InternalMetric
       @@missing_uploads[type][:stats] ||= {}
       last_check = @@missing_uploads[type][:last_check]
 
-      if Discourse.respond_to?(:stats) && (!last_check || (Time.now.to_i - last_check > MISSING_UPLOADS_CHECK_SECONDS))
+      if Discourse.respond_to?(:stats) &&
+           (!last_check || (Time.now.to_i - last_check > MISSING_UPLOADS_CHECK_SECONDS))
         begin
           RailsMultisite::ConnectionManagement.each_connection do |db|
             next if !SiteSetting.enable_s3_inventory
-            @@missing_uploads[type][:stats][{ db: db }] = Discourse.stats.get("missing_#{type}_uploads")
+            @@missing_uploads[type][:stats][{ db: db }] = Discourse.stats.get(
+              "missing_#{type}_uploads",
+            )
           end
 
           @@missing_uploads[type][:last_check] = Time.now.to_i
         rescue => e
           if @postgres_master_available == 1
-            Discourse.warn_exception(e, message: "Failed to connect to database to collect upload stats")
+            Discourse.warn_exception(
+              e,
+              message: "Failed to connect to database to collect upload stats",
+            )
           else
             # TODO: Be smarter and connect to the replica. For now, just disable
             # the noise when we failover.
@@ -259,9 +279,21 @@ module DiscoursePrometheus::InternalMetric
       hostname = ::PrometheusExporter.hostname
       stats = {}
       MiniScheduler::Manager.discover_schedules.each do |klass|
-        info_key = klass.is_per_host ? MiniScheduler::Manager.schedule_key(klass, hostname) : MiniScheduler::Manager.schedule_key(klass)
+        info_key =
+          (
+            if klass.is_per_host
+              MiniScheduler::Manager.schedule_key(klass, hostname)
+            else
+              MiniScheduler::Manager.schedule_key(klass)
+            end
+          )
         schedule_info = Discourse.redis.get(info_key)
-        schedule_info = JSON.parse(schedule_info, symbolize_names: true) rescue nil
+        schedule_info =
+          begin
+            JSON.parse(schedule_info, symbolize_names: true)
+          rescue StandardError
+            nil
+          end
 
         next if !schedule_info
         next if !schedule_info[:prev_result] == "RUNNING" # Only look at jobs which are running
@@ -270,15 +302,16 @@ module DiscoursePrometheus::InternalMetric
         job_frequency = klass.every || 1.day
         started_at = Time.at(schedule_info[:prev_run])
 
-        allowed_duration = begin
-          if job_frequency < 30.minutes
-            30.minutes
-          elsif job_frequency < 2.hours
-            job_frequency
-          else
-            2.hours
+        allowed_duration =
+          begin
+            if job_frequency < 30.minutes
+              30.minutes
+            elsif job_frequency < 2.hours
+              job_frequency
+            else
+              2.hours
+            end
           end
-        end
 
         next unless started_at < (Time.now - allowed_duration)
 
@@ -288,7 +321,10 @@ module DiscoursePrometheus::InternalMetric
       end
       stats
     rescue => e
-      Discourse.warn_exception(e, message: "Failed to connect to redis to collect scheduled job status")
+      Discourse.warn_exception(
+        e,
+        message: "Failed to connect to redis to collect scheduled job status",
+      )
     end
 
     def find_stuck_sidekiq_jobs
@@ -297,7 +333,7 @@ module DiscoursePrometheus::InternalMetric
       Sidekiq::Workers.new.each do |queue, tid, work|
         next unless queue.start_with?(hostname)
         next unless Time.at(work["run_at"]) < (Time.now - 60 * STUCK_SIDEKIQ_JOB_MINUTES)
-        labels = { job_name: work.dig('payload', 'class') }
+        labels = { job_name: work.dig("payload", "class") }
         stats[labels] ||= 0
         stats[labels] += 1
       end

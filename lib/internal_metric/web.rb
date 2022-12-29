@@ -2,23 +2,11 @@
 
 module DiscoursePrometheus::InternalMetric
   class Web < Base
+    FLOAT_ATTRS = %w[duration sql_duration net_duration redis_duration queue_duration]
 
-    FLOAT_ATTRS = %w{
-      duration
-      sql_duration
-      net_duration
-      redis_duration
-      queue_duration
-    }
+    INT_ATTRS = %w[sql_calls redis_calls net_calls status_code]
 
-    INT_ATTRS = %w{
-      sql_calls
-      redis_calls
-      net_calls
-      status_code
-    }
-
-    BOOL_ATTRS = %w{
+    BOOL_ATTRS = %w[
       ajax
       background
       logged_in
@@ -29,29 +17,17 @@ module DiscoursePrometheus::InternalMetric
       admin_api
       user_api
       forced_anon
-    }
+    ]
 
-    STRING_ATTRS = %w{
-      background_type
-      verb
-      controller
-      action
-      host
-      db
-      cache
-    }
+    STRING_ATTRS = %w[background_type verb controller action host db cache]
 
-    (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each do |attr|
-      attribute attr
-    end
+    (FLOAT_ATTRS + INT_ATTRS + BOOL_ATTRS + STRING_ATTRS).each { |attr| attribute attr }
 
     ALLOWED_REQUEST_METHODS = Set["HEAD", "GET", "PUT", "POST", "DELETE"]
 
     def self.get(hash)
       metric = new
-      hash.each do |k, v|
-        metric.send "#{k}=", v
-      end
+      hash.each { |k, v| metric.send "#{k}=", v }
       metric
     end
 
@@ -66,9 +42,7 @@ module DiscoursePrometheus::InternalMetric
 
       if multisite?
         spec = RailsMultisite::ConnectionManagement.connection_spec(host: host)
-        if spec
-          metric.db = spec.config[:database]
-        end
+        metric.db = spec.config[:database] if spec
       else
         metric.db = nil
       end
@@ -79,15 +53,15 @@ module DiscoursePrometheus::InternalMetric
         metric.queue_duration = 0.0
       end
 
-      metric.admin_api = !!env['_DISCOURSE_API']
-      metric.user_api = !!env['_DISCOURSE_USER_API']
+      metric.admin_api = !!env["_DISCOURSE_API"]
+      metric.user_api = !!env["_DISCOURSE_USER_API"]
 
-      metric.verb = env['REQUEST_METHOD']
-      metric.verb = 'OTHER' if !ALLOWED_REQUEST_METHODS.include?(metric.verb)
+      metric.verb = env["REQUEST_METHOD"]
+      metric.verb = "OTHER" if !ALLOWED_REQUEST_METHODS.include?(metric.verb)
 
-      if ad_params = env['action_dispatch.request.parameters']
-        metric.controller = ad_params['controller']
-        metric.action = ad_params['action']
+      if ad_params = env["action_dispatch.request.parameters"]
+        metric.controller = ad_params["controller"]
+        metric.action = ad_params["action"]
       end
 
       if timing = data[:timing]
@@ -119,8 +93,9 @@ module DiscoursePrometheus::InternalMetric
       metric.cache = data[:cache]
       metric.host = host
 
-      metric.json = env["PATH_INFO"].to_s.ends_with?(".json") ||
-        env["HTTP_ACCEPT"].to_s.include?("application/json")
+      metric.json =
+        env["PATH_INFO"].to_s.ends_with?(".json") ||
+          env["HTTP_ACCEPT"].to_s.include?("application/json")
 
       metric.ajax = env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
       metric.forced_anon = !!env["DISCOURSE_FORCE_ANON"]

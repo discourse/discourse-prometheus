@@ -2,7 +2,6 @@
 
 module DiscoursePrometheus::Reporter
   class Global
-
     def self.clear_connections!
       ActiveRecord::Base.connection_handler.clear_active_connections!
     end
@@ -17,7 +16,11 @@ module DiscoursePrometheus::Reporter
         Discourse.warn_exception(e, message: "Prometheus Discourse Failed To Collect Global Stats")
       rescue => e1
         # never crash an iteration
-        STDERR.puts "ERR failed to log warning: #{e1}" rescue nil
+        begin
+          STDERR.puts "ERR failed to log warning: #{e1}"
+        rescue StandardError
+          nil
+        end
       end
     end
 

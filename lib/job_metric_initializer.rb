@@ -2,15 +2,11 @@
 
 class ::DiscoursePrometheus::JobMetricInitializer
   def self.initialize_scheduled_job_metrics
-    each_scheduled_job_metric do |metric|
-      $prometheus_client.send_json metric.to_h
-    end
+    each_scheduled_job_metric { |metric| $prometheus_client.send_json metric.to_h }
   end
 
   def self.initialize_regular_job_metrics
-    each_regular_job_metric do |metric|
-      $prometheus_client.send_json metric.to_h
-    end
+    each_regular_job_metric { |metric| $prometheus_client.send_json metric.to_h }
   end
 
   def self.each_regular_job_metric
@@ -24,7 +20,8 @@ class ::DiscoursePrometheus::JobMetricInitializer
 
       ancestors = job_klass.ancestors
 
-      if ancestors.include?(::Jobs::Base) && !ancestors.include?(::Jobs::Scheduled) && !ancestors.include?(::Jobs::Onceoff)
+      if ancestors.include?(::Jobs::Base) && !ancestors.include?(::Jobs::Scheduled) &&
+           !ancestors.include?(::Jobs::Onceoff)
         metric = DiscoursePrometheus::InternalMetric::Job.new
         metric.scheduled = false
         metric.duration = 0

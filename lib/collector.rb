@@ -87,9 +87,7 @@ module ::DiscoursePrometheus
         gauge.reset!
 
         if values.is_a?(Hash)
-          values.each do |labels, value|
-            gauge.observe(value, labels)
-          end
+          values.each { |labels, value| gauge.observe(value, labels) }
         else
           gauge.observe(values)
         end
@@ -103,12 +101,12 @@ module ::DiscoursePrometheus
 
       global_metrics << Gauge.new(
         "postgres_readonly_mode",
-        "Indicates whether site is in readonly mode due to PostgreSQL failover"
+        "Indicates whether site is in readonly mode due to PostgreSQL failover",
       )
 
       global_metrics << Gauge.new(
         "redis_master_available",
-        "DEPRECATED: see redis_primary_available"
+        "DEPRECATED: see redis_primary_available",
       )
 
       global_metrics << Gauge.new(
@@ -118,82 +116,64 @@ module ::DiscoursePrometheus
 
       global_metrics << Gauge.new(
         "redis_slave_available",
-        "DEPRECATED: see redis_replica_available"
+        "DEPRECATED: see redis_replica_available",
       )
 
       global_metrics << Gauge.new(
         "redis_replica_available",
-        "Whether or not we have an active connection to the replica Redis"
+        "Whether or not we have an active connection to the replica Redis",
       )
 
       global_metrics << Gauge.new(
         "postgres_master_available",
-        "DEPRECATED: See postgres_primary_available"
+        "DEPRECATED: See postgres_primary_available",
       )
 
       global_metrics << Gauge.new(
         "postgres_primary_available",
-        "Whether or not we have an active connection to the primary PostgreSQL"
+        "Whether or not we have an active connection to the primary PostgreSQL",
       )
 
       global_metrics << Gauge.new(
         "postgres_replica_available",
-        "Whether or not we have an active connection to the replica PostgreSQL"
+        "Whether or not we have an active connection to the replica PostgreSQL",
       )
 
-      global_metrics << Gauge.new(
-        "active_app_reqs",
-        "Number of active web requests in progress"
-      )
+      global_metrics << Gauge.new("active_app_reqs", "Number of active web requests in progress")
 
-      global_metrics << Gauge.new(
-        "queued_app_reqs",
-        "Number of queued web requests"
-      )
+      global_metrics << Gauge.new("queued_app_reqs", "Number of queued web requests")
 
       global_metrics << Gauge.new(
         "sidekiq_jobs_enqueued",
-        "Number of jobs queued in the Sidekiq worker processes"
+        "Number of jobs queued in the Sidekiq worker processes",
       )
 
-      global_metrics << Gauge.new(
-        "sidekiq_processes",
-        "Number of Sidekiq job processes"
-      )
+      global_metrics << Gauge.new("sidekiq_processes", "Number of Sidekiq job processes")
 
-      global_metrics << Gauge.new(
-        "sidekiq_paused",
-        "Whether or not Sidekiq is paused"
-      )
+      global_metrics << Gauge.new("sidekiq_paused", "Whether or not Sidekiq is paused")
 
-      global_metrics << Gauge.new(
-        "sidekiq_workers",
-        "Total number of active sidekiq workers"
-      )
+      global_metrics << Gauge.new("sidekiq_workers", "Total number of active sidekiq workers")
 
       global_metrics << Gauge.new(
         "sidekiq_jobs_stuck",
-        "Number of sidekiq jobs which have been running for more than #{InternalMetric::Global::STUCK_SIDEKIQ_JOB_MINUTES} minutes"
+        "Number of sidekiq jobs which have been running for more than #{InternalMetric::Global::STUCK_SIDEKIQ_JOB_MINUTES} minutes",
       )
 
       global_metrics << Gauge.new(
         "scheduled_jobs_stuck",
-        "Number of scheduled jobs which have been running for more than their expected duration"
+        "Number of scheduled jobs which have been running for more than their expected duration",
       )
 
-      global_metrics << Gauge.new(
-        "missing_s3_uploads",
-        "Number of missing uploads in S3"
-      )
+      global_metrics << Gauge.new("missing_s3_uploads", "Number of missing uploads in S3")
 
       global_metrics << Gauge.new(
         "version_info",
-        "Labelled with `revision` (current core commit hash), and `version` (Discourse::VERSION::STRING)"
+        "Labelled with `revision` (current core commit hash), and `version` (Discourse::VERSION::STRING)",
       )
 
       global_metrics << Gauge.new(
         "readonly_sites",
-        "Count of sites currently in readonly mode, grouped by the relevant key from Discourse::READONLY_KEYS"
+        "Count of sites currently in readonly mode, grouped by the relevant key from Discourse::READONLY_KEYS",
       )
 
       @global_metrics = global_metrics
@@ -201,9 +181,7 @@ module ::DiscoursePrometheus
 
     def process_job(metric)
       ensure_job_metrics
-      hash = {
-        job_name: metric.job_name
-      }
+      hash = { job_name: metric.job_name }
       if metric.scheduled
         @scheduled_job_duration_seconds.observe(metric.duration, hash)
         @scheduled_job_count.observe(metric.count, hash)
@@ -215,10 +193,14 @@ module ::DiscoursePrometheus
 
     def ensure_job_metrics
       unless @scheduled_job_count
-        @scheduled_job_duration_seconds = Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
-        @scheduled_job_count = Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
-        @sidekiq_job_duration_seconds = Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
-        @sidekiq_job_count = Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
+        @scheduled_job_duration_seconds =
+          Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
+        @scheduled_job_count =
+          Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
+        @sidekiq_job_duration_seconds =
+          Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
+        @sidekiq_job_count =
+          Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
       end
     end
 
@@ -236,18 +218,39 @@ module ::DiscoursePrometheus
       unless @page_views
         @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
         @http_requests = Counter.new("http_requests", "Total HTTP requests from web app")
-        @http_forced_anon_count = Counter.new("http_forced_anon_count", "Total count of logged in requests forced into anonymous mode")
+        @http_forced_anon_count =
+          Counter.new(
+            "http_forced_anon_count",
+            "Total count of logged in requests forced into anonymous mode",
+          )
 
-        @http_duration_seconds = Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
-        @http_redis_duration_seconds = Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
-        @http_sql_duration_seconds = Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
-        @http_net_duration_seconds = Summary.new("http_net_duration_seconds", "Time spent in external network requests")
-        @http_queue_duration_seconds = Summary.new("http_queue_duration_seconds", "Time spent queueing requests between NGINX and Ruby")
+        @http_duration_seconds =
+          Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
+        @http_redis_duration_seconds =
+          Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
+        @http_sql_duration_seconds =
+          Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
+        @http_net_duration_seconds =
+          Summary.new("http_net_duration_seconds", "Time spent in external network requests")
+        @http_queue_duration_seconds =
+          Summary.new(
+            "http_queue_duration_seconds",
+            "Time spent queueing requests between NGINX and Ruby",
+          )
 
-        @http_sql_calls_per_request = Gauge.new("http_sql_calls_per_request", "How many SQL statements ran per request")
+        @http_sql_calls_per_request =
+          Gauge.new("http_sql_calls_per_request", "How many SQL statements ran per request")
 
-        @http_anon_cache_store = Counter.new("http_anon_cache_store", "How many a payload is stored in redis for anonymous cache")
-        @http_anon_cache_hit = Counter.new("http_anon_cache_hit", "How many a payload from redis is used for anonymous cache")
+        @http_anon_cache_store =
+          Counter.new(
+            "http_anon_cache_store",
+            "How many a payload is stored in redis for anonymous cache",
+          )
+        @http_anon_cache_hit =
+          Counter.new(
+            "http_anon_cache_hit",
+            "How many a payload from redis is used for anonymous cache",
+          )
       end
     end
 
@@ -260,7 +263,7 @@ module ::DiscoursePrometheus
         if observe_timings?(metric)
           { controller: metric.controller, action: metric.action }
         else
-          { controller: 'other', action: 'other' }
+          { controller: "other", action: "other" }
         end
 
       @http_duration_seconds.observe(metric.duration, labels)
@@ -268,7 +271,10 @@ module ::DiscoursePrometheus
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
       @http_net_duration_seconds.observe(metric.net_duration, labels)
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
-      @http_sql_calls_per_request.observe(metric.sql_calls, labels.merge(logged_in: metric.logged_in))
+      @http_sql_calls_per_request.observe(
+        metric.sql_calls,
+        labels.merge(logged_in: metric.logged_in),
+      )
 
       if cache = metric.cache
         if cache == "store"
@@ -317,17 +323,13 @@ module ::DiscoursePrometheus
         hash[:status] = metric.status_code
       end
 
-      if metric.forced_anon
-        @http_forced_anon_count.observe(1, hash)
-      end
+      @http_forced_anon_count.observe(1, hash) if metric.forced_anon
       @http_requests.observe(1, hash)
     end
 
     def prometheus_metrics
       metrics = web_metrics + process_metrics + job_metrics + @global_metrics
-      if @custom_metrics
-        metrics += @custom_metrics.values
-      end
+      metrics += @custom_metrics.values if @custom_metrics
       metrics
     end
 
@@ -344,20 +346,15 @@ module ::DiscoursePrometheus
       else
         []
       end
-
     end
 
     def report_metric(instrument, metric, key)
       values = metric.send(key)
-      if values.nil? || values == {}
-        return
-      end
+      return if values.nil? || values == {}
       default_labels = { type: metric.type, pid: metric.pid }
 
       if values.is_a?(Hash)
-        values.each do |labels, value|
-          instrument.observe(value, default_labels.merge(labels))
-        end
+        values.each { |labels, value| instrument.observe(value, default_labels.merge(labels)) }
       else
         instrument.observe(values, default_labels)
       end
@@ -370,27 +367,23 @@ module ::DiscoursePrometheus
       InternalMetric::Process::GAUGES.each do |key, name|
         gauge = Gauge.new(key.to_s, name)
         metrics << gauge
-        @process_metrics.each do |metric|
-          report_metric(gauge, metric, key)
-        end
+        @process_metrics.each { |metric| report_metric(gauge, metric, key) }
       end
       InternalMetric::Process::COUNTERS.each do |key, name|
         counter = Counter.new(key.to_s, name)
         metrics << counter
-        @process_metrics.each do |metric|
-          report_metric(counter, metric, key)
-        end
+        @process_metrics.each { |metric| report_metric(counter, metric, key) }
       end
       metrics
     end
 
     def web_metrics
       if @page_views
-        [@page_views, @http_requests, @http_duration_seconds,
-          @http_redis_duration_seconds, @http_sql_duration_seconds,
-          @http_net_duration_seconds, @http_queue_duration_seconds,
-          @http_forced_anon_count, @http_sql_calls_per_request,
-          @http_anon_cache_store, @http_anon_cache_hit
+        [
+          @page_views, @http_requests, @http_duration_seconds, @http_redis_duration_seconds,
+          @http_sql_duration_seconds, @http_net_duration_seconds, @http_queue_duration_seconds,
+          @http_forced_anon_count, @http_sql_calls_per_request, @http_anon_cache_store,
+          @http_anon_cache_hit,
         ]
       else
         []
@@ -399,10 +392,10 @@ module ::DiscoursePrometheus
 
     def observe_timings?(metric)
       (metric.controller == "list" && metric.action == "latest") ||
-      (metric.controller == "list" && metric.action == "top") ||
-      (metric.controller == "topics" && metric.action == "show") ||
-      (metric.controller == "users" && metric.action == "show") ||
-      (metric.controller == "categories" && metric.action == "categories_and_latest")
+        (metric.controller == "list" && metric.action == "top") ||
+        (metric.controller == "topics" && metric.action == "show") ||
+        (metric.controller == "users" && metric.action == "show") ||
+        (metric.controller == "categories" && metric.action == "categories_and_latest")
     end
   end
 end

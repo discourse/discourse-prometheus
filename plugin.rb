@@ -6,13 +6,15 @@
 # authors: Sam Saffron
 # url: https://github.com/discourse/discourse-prometheus
 
-module ::DiscoursePrometheus; end
+module ::DiscoursePrometheus
+end
 
-gem 'webrick', '1.7.0'
+gem "webrick", "1.7.0"
 # a bit odd but we need to read this from a version file
 # cause this is loaded from the collector bin
-gem 'prometheus_exporter', File.read(File.expand_path("../prometheus_exporter_version", __FILE__)).strip
-require 'prometheus_exporter/client'
+gem "prometheus_exporter",
+    File.read(File.expand_path("../prometheus_exporter_version", __FILE__)).strip
+require "prometheus_exporter/client"
 
 require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")
@@ -33,17 +35,15 @@ require_relative("lib/middleware/metrics")
 require_relative("lib/job_metric_initializer")
 
 GlobalSetting.add_default :prometheus_collector_port, 9405
-GlobalSetting.add_default :prometheus_webserver_bind, 'localhost'
-GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ''
+GlobalSetting.add_default :prometheus_webserver_bind, "localhost"
+GlobalSetting.add_default :prometheus_trusted_ip_allowlist_regex, ""
 DiscoursePluginRegistry.define_filtered_register :global_collectors
 
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
-  $prometheus_client = PrometheusExporter::Client.new(
-    host: 'localhost',
-    port: GlobalSetting.prometheus_collector_port
-  )
+  $prometheus_client =
+    PrometheusExporter::Client.new(host: "localhost", port: GlobalSetting.prometheus_collector_port)
 
   # creates no new threads, this simply adds the instruments
   DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
@@ -57,9 +57,7 @@ after_initialize do
     DiscoursePrometheus::JobMetricInitializer.initialize_scheduled_job_metrics
   end
 
-  on(:web_fork_started) do
-    DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web)
-  end
+  on(:web_fork_started) { DiscoursePrometheus::Reporter::Process.start($prometheus_client, :web) }
 
   on(:scheduled_job_ran) do |stat|
     metric = DiscoursePrometheus::InternalMetric::Job.new

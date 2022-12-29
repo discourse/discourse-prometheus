@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-require_dependency 'demon/base'
+require_dependency "demon/base"
 
 class DiscoursePrometheus::GlobalReporterDemon < ::Demon::Base
   def self.prefix
@@ -19,9 +19,9 @@ class DiscoursePrometheus::GlobalReporterDemon < ::Demon::Base
     STDERR.puts "#{Time.now}: Starting Prometheus global reporter pid: #{Process.pid}"
     t = DiscoursePrometheus::Reporter::Global.start($prometheus_client)
 
-    trap('INT')  { DiscoursePrometheus::Reporter::Global.stop }
-    trap('TERM') { DiscoursePrometheus::Reporter::Global.stop }
-    trap('QUIT') { DiscoursePrometheus::Reporter::Global.stop }
+    trap("INT") { DiscoursePrometheus::Reporter::Global.stop }
+    trap("TERM") { DiscoursePrometheus::Reporter::Global.stop }
+    trap("QUIT") { DiscoursePrometheus::Reporter::Global.stop }
 
     t.join
     STDERR.puts "#{Time.now}: Stopping Prometheus global reporter pid: #{Process.pid}"

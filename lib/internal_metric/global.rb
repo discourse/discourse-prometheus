@@ -49,6 +49,8 @@ module DiscoursePrometheus::InternalMetric
         # else
         STDERR.puts "Failed to calculate discourse_version_info metric: #{e}\n#{e.backtrace.join("\n")}\n#{out}\n#{error}"
 
+        STDERR.puts `ls -al`
+
         # end
 
         @@retries ||= 10

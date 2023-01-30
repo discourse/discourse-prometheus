@@ -44,11 +44,12 @@ module DiscoursePrometheus::InternalMetric
           raise error
         end
       rescue => e
-        if defined?(::Discourse)
-          Discourse.warn_exception(e, message: "Failed to calculate discourse_version_info metric")
-        else
-          STDERR.puts "Failed to calculate discourse_version_info metric: #{e}\n#{e.backtrace.join("\n")}"
-        end
+        # if defined?(::Discourse)
+        #   Discourse.warn_exception(e, message: "Failed to calculate discourse_version_info metric")
+        # else
+        STDERR.puts "Failed to calculate discourse_version_info metric: #{e}\n#{e.backtrace.join("\n")}\n#{out}\n#{error}"
+
+        # end
 
         @@retries ||= 10
         @@retries -= 1

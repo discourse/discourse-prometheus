@@ -50,6 +50,7 @@ module DiscoursePrometheus::InternalMetric
         STDERR.puts "Failed to calculate discourse_version_info metric: #{e}\n#{e.backtrace.join("\n")}\n#{out}\n#{error}"
 
         STDERR.puts `ls -al`
+        STDERR.puts `git config --global -l`
 
         # end
 

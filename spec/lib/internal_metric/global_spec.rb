@@ -112,5 +112,14 @@ module DiscoursePrometheus::InternalMetric
         expect(metric.postgres_replica_available).to eq(0)
       end
     end
+
+    it "can collect pg_seq metric" do
+      3.times { Fabricate(:user) }
+
+      metric.collect
+
+      expect(metric.pg_highest_seq).to be_a_kind_of(Integer)
+      expect(metric.pg_highest_seq).to be > 3
+    end
   end
 end

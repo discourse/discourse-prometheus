@@ -176,6 +176,11 @@ module ::DiscoursePrometheus
         "Count of sites currently in readonly mode, grouped by the relevant key from Discourse::READONLY_KEYS",
       )
 
+      global_metrics << Gauge.new(
+        "pg_highest_seq",
+        "The highest last_value from the pg_sequences table",
+      )
+
       @global_metrics = global_metrics
     end
 

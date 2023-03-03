@@ -26,7 +26,8 @@ module DiscoursePrometheus::InternalMetric
               :scheduled_jobs_stuck,
               :missing_s3_uploads,
               :version_info,
-              :readonly_sites
+              :readonly_sites,
+              :pg_highest_seq
 
     def initialize
       @active_app_reqs = 0
@@ -165,11 +166,15 @@ module DiscoursePrometheus::InternalMetric
       @missing_s3_uploads = missing_uploads("s3")
 
       @readonly_sites = collect_readonly_sites
+
+      @pg_highest_seq = calc_pg_highest_seq
     end
 
     # For testing purposes
     def reset!
       @@missing_uploads = nil
+      @@pg_highest_seq_last_check = nil
+      @@pg_highest_seq_cache = nil
     end
 
     private
@@ -338,6 +343,31 @@ module DiscoursePrometheus::InternalMetric
         stats[labels] += 1
       end
       stats
+    end
+
+    PG_HIGHEST_SEQ_CHECK_SECONDS = 60
+
+    def calc_pg_highest_seq
+      @@pg_highest_seq_last_check ||= 0
+
+      if @@pg_highest_seq_last_check >= Time.now.to_i - PG_HIGHEST_SEQ_CHECK_SECONDS
+        return @@pg_highest_seq_cache
+      end
+
+      @@pg_highest_seq_last_check = Time.now
+
+      value = (DB.query_single <<~SQL)[0]
+        SELECT last_value
+        FROM pg_sequences
+        ORDER BY last_value DESC NULLS LAST
+        LIMIT 1
+      SQL
+
+      @@pg_highest_seq_cache = value
+    rescue => e
+      if @postgres_master_available == 1
+        Discourse.warn_exception(e, message: "Failed to collect pg_highest_seq value")
+      end
     end
   end
 end

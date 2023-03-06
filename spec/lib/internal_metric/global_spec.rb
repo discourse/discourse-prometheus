@@ -118,8 +118,8 @@ module DiscoursePrometheus::InternalMetric
 
       metric.collect
 
-      expect(metric.pg_highest_seq).to be_a_kind_of(Integer)
-      expect(metric.pg_highest_seq).to be > 3
+      expect(metric.postgres_highest_sequence).to be_a_kind_of(Hash)
+      expect(metric.postgres_highest_sequence[{ db: "default" }]).to be > 3
     end
   end
 end

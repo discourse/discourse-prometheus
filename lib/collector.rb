@@ -259,12 +259,15 @@ module ::DiscoursePrometheus
       # STDERR.puts metric.to_h.inspect
       # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
-      labels =
-        if observe_timings?(metric)
-          { controller: metric.controller, action: metric.action }
-        else
-          { controller: "other", action: "other" }
-        end
+      labels = { cache: !!metric.cache, success: (200..299).include?(metric.status_code) }
+
+      if observe_timings?(metric)
+        labels[:controller] = metric.controller
+        labels[:action] = metric.action
+      else
+        labels[:controller] = "other"
+        labels[:action] = "other"
+      end
 
       @http_duration_seconds.observe(metric.duration, labels)
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)

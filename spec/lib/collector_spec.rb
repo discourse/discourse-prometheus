@@ -247,5 +247,67 @@ module DiscoursePrometheus
       }
       expect(http_requests.data).to eq(expected)
     end
+
+    it "processes timing attributes in web metrics correctly" do
+      metrics = []
+
+      metrics << InternalMetric::Web.get(
+        status_code: 200,
+        duration: 5,
+        sql_duration: 1,
+        redis_duration: 3,
+        net_duration: 5,
+        controller: "list",
+        action: "latest",
+      )
+
+      metrics << InternalMetric::Web.get(
+        status_code: 302,
+        duration: 5,
+        sql_duration: 1,
+        redis_duration: 3,
+        net_duration: 5,
+        controller: "list",
+        action: "latest",
+        cache: "true",
+      )
+
+      collector = Collector.new
+      metrics.each { |metric| collector.process(metric.to_json) }
+
+      exported = collector.prometheus_metrics
+
+      assert_metric = ->(metric_name, sum) {
+        metrics = exported.find { |metric| metric.name == metric_name }
+
+        expect(metrics.to_h).to eq(
+          {
+            controller: "list",
+            action: "latest",
+            success: true,
+            cache: false,
+          } => {
+            "count" => 1,
+            "sum" => sum,
+          },
+          {
+            controller: "list",
+            action: "latest",
+            success: false,
+            cache: true,
+          } => {
+            "count" => 1,
+            "sum" => sum,
+          },
+        )
+      }
+
+      [
+        ["http_duration_seconds", 5.0],
+        ["http_sql_duration_seconds", 1.0],
+        ["http_redis_duration_seconds", 3.0],
+        ["http_net_duration_seconds", 5.0],
+      ].each { |metric_name, sum| assert_metric.call(metric_name, sum) }
+    end
   end
 end

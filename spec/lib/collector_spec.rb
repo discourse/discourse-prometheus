@@ -257,6 +257,7 @@ module DiscoursePrometheus
         sql_duration: 1,
         redis_duration: 3,
         net_duration: 5,
+        json: true,
         controller: "list",
         action: "latest",
         logged_in: true,
@@ -272,6 +273,7 @@ module DiscoursePrometheus
         action: "latest",
         cache: true,
         logged_in: false,
+        html: true,
       )
 
       collector = Collector.new
@@ -289,6 +291,7 @@ module DiscoursePrometheus
             success: true,
             cache: false,
             logged_in: true,
+            content_type: "json",
           } => {
             "count" => 1,
             "sum" => sum,
@@ -299,6 +302,7 @@ module DiscoursePrometheus
             success: false,
             cache: true,
             logged_in: false,
+            content_type: "html",
           } => {
             "count" => 1,
             "sum" => sum,

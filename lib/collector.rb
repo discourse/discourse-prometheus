@@ -259,7 +259,12 @@ module ::DiscoursePrometheus
       # STDERR.puts metric.to_h.inspect
       # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
-      labels = { cache: !!metric.cache, success: (200..299).include?(metric.status_code) }
+      labels = {
+        cache: !!metric.cache,
+        success: (200..299).include?(metric.status_code),
+        content_type: web_metric_content_type(metric),
+        logged_in: metric.logged_in,
+      }
 
       if observe_timings?(metric)
         labels[:controller] = metric.controller
@@ -268,8 +273,6 @@ module ::DiscoursePrometheus
         labels[:controller] = "other"
         labels[:action] = "other"
       end
-
-      labels[:logged_in] = metric.logged_in
 
       @http_duration_seconds.observe(metric.duration, labels)
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
@@ -398,6 +401,16 @@ module ::DiscoursePrometheus
         (metric.controller == "topics" && metric.action == "show") ||
         (metric.controller == "users" && metric.action == "show") ||
         (metric.controller == "categories" && metric.action == "categories_and_latest")
+    end
+
+    def web_metric_content_type(metric)
+      if metric.json
+        "json"
+      elsif metric.html
+        "html"
+      else
+        "other"
+      end
     end
   end
 end

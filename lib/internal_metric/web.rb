@@ -14,6 +14,7 @@ module DiscoursePrometheus::InternalMetric
       mobile
       tracked
       json
+      html
       admin_api
       user_api
       forced_anon
@@ -96,6 +97,9 @@ module DiscoursePrometheus::InternalMetric
       metric.json =
         env["PATH_INFO"].to_s.ends_with?(".json") ||
           env["HTTP_ACCEPT"].to_s.include?("application/json")
+
+      metric.html =
+        env["PATH_INFO"].to_s.ends_with?(".html") || env["HTTP_ACCEPT"].to_s.include?("text/html")
 
       metric.ajax = env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
       metric.forced_anon = !!env["DISCOURSE_FORCE_ANON"]

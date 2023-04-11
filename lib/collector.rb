@@ -385,9 +385,16 @@ module ::DiscoursePrometheus
     def web_metrics
       if @page_views
         [
-          @page_views, @http_requests, @http_duration_seconds, @http_redis_duration_seconds,
-          @http_sql_duration_seconds, @http_net_duration_seconds, @http_queue_duration_seconds,
-          @http_forced_anon_count, @http_sql_calls_per_request, @http_anon_cache_store,
+          @page_views,
+          @http_requests,
+          @http_duration_seconds,
+          @http_redis_duration_seconds,
+          @http_sql_duration_seconds,
+          @http_net_duration_seconds,
+          @http_queue_duration_seconds,
+          @http_forced_anon_count,
+          @http_sql_calls_per_request,
+          @http_anon_cache_store,
           @http_anon_cache_hit,
         ]
       else

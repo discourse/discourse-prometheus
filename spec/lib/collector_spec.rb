@@ -259,6 +259,7 @@ module DiscoursePrometheus
         net_duration: 5,
         controller: "list",
         action: "latest",
+        logged_in: true,
       )
 
       metrics << InternalMetric::Web.get(
@@ -269,7 +270,8 @@ module DiscoursePrometheus
         net_duration: 5,
         controller: "list",
         action: "latest",
-        cache: "true",
+        cache: true,
+        logged_in: false,
       )
 
       collector = Collector.new
@@ -286,6 +288,7 @@ module DiscoursePrometheus
             action: "latest",
             success: true,
             cache: false,
+            logged_in: true,
           } => {
             "count" => 1,
             "sum" => sum,
@@ -295,6 +298,7 @@ module DiscoursePrometheus
             action: "latest",
             success: false,
             cache: true,
+            logged_in: false,
           } => {
             "count" => 1,
             "sum" => sum,

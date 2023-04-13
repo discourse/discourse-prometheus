@@ -253,10 +253,10 @@ module DiscoursePrometheus
 
       metrics << InternalMetric::Web.get(
         status_code: 200,
-        duration: 5,
+        duration: 10,
         sql_duration: 1,
-        redis_duration: 3,
-        net_duration: 5,
+        redis_duration: 2,
+        net_duration: 3,
         json: true,
         controller: "list",
         action: "latest",
@@ -265,10 +265,10 @@ module DiscoursePrometheus
 
       metrics << InternalMetric::Web.get(
         status_code: 302,
-        duration: 5,
+        duration: 10,
         sql_duration: 1,
-        redis_duration: 3,
-        net_duration: 5,
+        redis_duration: 2,
+        net_duration: 3,
         controller: "list",
         action: "latest",
         cache: true,
@@ -311,10 +311,11 @@ module DiscoursePrometheus
       }
 
       [
-        ["http_duration_seconds", 5.0],
+        ["http_duration_seconds", 10.0],
+        ["http_application_duration_seconds", 4.0],
         ["http_sql_duration_seconds", 1.0],
-        ["http_redis_duration_seconds", 3.0],
-        ["http_net_duration_seconds", 5.0],
+        ["http_redis_duration_seconds", 2.0],
+        ["http_net_duration_seconds", 3.0],
       ].each { |metric_name, sum| assert_metric.call(metric_name, sum) }
     end
   end

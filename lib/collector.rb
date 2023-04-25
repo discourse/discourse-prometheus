@@ -13,6 +13,7 @@ module ::DiscoursePrometheus
       @page_views = nil
       @http_requests = nil
       @http_duration_seconds = nil
+      @http_application_duration_seconds = nil
       @http_redis_duration_seconds = nil
       @http_sql_duration_seconds = nil
       @http_net_duration_seconds = nil
@@ -226,12 +227,25 @@ module ::DiscoursePrometheus
 
         @http_duration_seconds =
           Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
+
+        @http_application_duration_seconds =
+          Summary.new(
+            "http_application_duration_seconds",
+            "Time spent in application code within HTTP reqs in seconds",
+          )
+
         @http_redis_duration_seconds =
-          Summary.new("http_redis_duration_seconds", "Time spent in HTTP reqs in redis seconds")
+          Summary.new(
+            "http_redis_duration_seconds",
+            "Time spent in Redis within HTTP reqs redis seconds",
+          )
+
         @http_sql_duration_seconds =
-          Summary.new("http_sql_duration_seconds", "Time spent in HTTP reqs in SQL in seconds")
+          Summary.new("http_sql_duration_seconds", "Time spent in SQL within HTTP reqs in seconds")
+
         @http_net_duration_seconds =
           Summary.new("http_net_duration_seconds", "Time spent in external network requests")
+
         @http_queue_duration_seconds =
           Summary.new(
             "http_queue_duration_seconds",
@@ -274,7 +288,18 @@ module ::DiscoursePrometheus
         labels[:action] = "other"
       end
 
-      @http_duration_seconds.observe(metric.duration, labels)
+      duration = metric.duration
+
+      @http_duration_seconds.observe(duration, labels)
+
+      if duration
+        application_duration = duration.dup
+        application_duration -= metric.sql_duration if metric.sql_duration
+        application_duration -= metric.redis_duration if metric.redis_duration
+        application_duration -= metric.net_duration if metric.net_duration
+        @http_application_duration_seconds.observe(application_duration, labels)
+      end
+
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
       @http_net_duration_seconds.observe(metric.net_duration, labels)
@@ -388,6 +413,7 @@ module ::DiscoursePrometheus
           @page_views,
           @http_requests,
           @http_duration_seconds,
+          @http_application_duration_seconds,
           @http_redis_duration_seconds,
           @http_sql_duration_seconds,
           @http_net_duration_seconds,

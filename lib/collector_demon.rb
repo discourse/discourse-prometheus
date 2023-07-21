@@ -17,6 +17,8 @@ class DiscoursePrometheus::CollectorDemon < ::Demon::Base
 
     ENV["RUBY_GLOBAL_METHOD_CACHE_SIZE"] = "2048"
     ENV["RUBY_GC_HEAP_INIT_SLOTS"] = "10000"
+    ENV["WEBRICK_VERSION"] = WEBrick::VERSION
+    ENV["PROMETHEUS_EXPORTER_VERSION"] = PrometheusExporter::VERSION
 
     exec collector,
          GlobalSetting.prometheus_collector_port.to_s,

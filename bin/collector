@@ -3,11 +3,15 @@
 
 Process.setproctitle("discourse prometheus-collector")
 
-version = File.read(File.expand_path("../../prometheus_exporter_version", __FILE__)).strip
-spec_file = File.expand_path("../../gems/#{RUBY_VERSION}/specifications/prometheus_exporter-#{version}.gemspec", __FILE__)
-
-spec = Gem::Specification.load spec_file
-spec.activate
+[
+  "webrick-#{ENV["WEBRICK_VERSION"]}",
+  "prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}",
+].each do |spec_name|
+  spec_file =
+    File.expand_path("../../gems/#{RUBY_VERSION}/specifications/#{spec_name}.gemspec", __FILE__)
+  spec = Gem::Specification.load(spec_file)
+  spec.activate
+end
 
 require 'thread'
 require 'set'

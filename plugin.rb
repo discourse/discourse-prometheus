@@ -10,10 +10,8 @@ module ::DiscoursePrometheus
 end
 
 gem "webrick", "1.7.0"
-# a bit odd but we need to read this from a version file
-# cause this is loaded from the collector bin
-gem "prometheus_exporter",
-    File.read(File.expand_path("../prometheus_exporter_version", __FILE__)).strip
+gem "prometheus_exporter", "2.0.6"
+
 require "prometheus_exporter/client"
 
 require_relative("lib/internal_metric/base")

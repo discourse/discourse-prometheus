@@ -5,7 +5,7 @@ Process.setproctitle("discourse prometheus-collector")
 
 [
   "webrick-#{ENV["WEBRICK_VERSION"]}",
-  "prometheus_exporter-#{ENV["PROMETHUS_EXPORTER_VERSION"]}",
+  "prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}",
 ].each do |spec_name|
   spec_file =
     File.expand_path("../../gems/#{RUBY_VERSION}/specifications/#{spec_name}.gemspec", __FILE__)

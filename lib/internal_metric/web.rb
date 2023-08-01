@@ -2,9 +2,9 @@
 
 module DiscoursePrometheus::InternalMetric
   class Web < Base
-    FLOAT_ATTRS = %w[duration sql_duration net_duration redis_duration queue_duration]
+    FLOAT_ATTRS = %w[duration sql_duration net_duration redis_duration queue_duration gc_duration]
 
-    INT_ATTRS = %w[sql_calls redis_calls net_calls status_code]
+    INT_ATTRS = %w[sql_calls redis_calls net_calls status_code gc_major_count gc_minor_count]
 
     BOOL_ATTRS = %w[
       ajax
@@ -81,6 +81,12 @@ module DiscoursePrometheus::InternalMetric
         if net = timing[:net]
           metric.net_duration = net[:duration]
           metric.net_calls = net[:calls]
+        end
+
+        if gc = timing[:gc]
+          metric.gc_duration = gc[:time]
+          metric.gc_major_count = gc[:major_count]
+          metric.gc_minor_count = gc[:minor_count]
         end
       end
 

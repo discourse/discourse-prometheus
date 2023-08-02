@@ -313,6 +313,7 @@ module ::DiscoursePrometheus
         application_duration -= metric.sql_duration if metric.sql_duration
         application_duration -= metric.redis_duration if metric.redis_duration
         application_duration -= metric.net_duration if metric.net_duration
+        application_duration -= metric.gc_duration if metric.gc_duration
         @http_application_duration_seconds.observe(application_duration, labels)
       end
 

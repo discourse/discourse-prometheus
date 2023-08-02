@@ -253,7 +253,7 @@ module DiscoursePrometheus
 
       metrics << InternalMetric::Web.get(
         status_code: 200,
-        duration: 10,
+        duration: 14,
         sql_duration: 1,
         redis_duration: 2,
         net_duration: 3,
@@ -268,7 +268,7 @@ module DiscoursePrometheus
 
       metrics << InternalMetric::Web.get(
         status_code: 302,
-        duration: 10,
+        duration: 14,
         sql_duration: 1,
         redis_duration: 2,
         net_duration: 3,
@@ -317,7 +317,7 @@ module DiscoursePrometheus
       }
 
       [
-        ["http_duration_seconds", 10.0],
+        ["http_duration_seconds", 14.0],
         ["http_application_duration_seconds", 4.0],
         ["http_sql_duration_seconds", 1.0],
         ["http_redis_duration_seconds", 2.0],

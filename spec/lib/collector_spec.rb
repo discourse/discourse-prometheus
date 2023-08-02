@@ -257,6 +257,9 @@ module DiscoursePrometheus
         sql_duration: 1,
         redis_duration: 2,
         net_duration: 3,
+        gc_duration: 4,
+        gc_major_count: 5,
+        gc_minor_count: 6,
         json: true,
         controller: "list",
         action: "latest",
@@ -269,6 +272,9 @@ module DiscoursePrometheus
         sql_duration: 1,
         redis_duration: 2,
         net_duration: 3,
+        gc_duration: 4,
+        gc_major_count: 5,
+        gc_minor_count: 6,
         controller: "list",
         action: "latest",
         cache: true,
@@ -316,7 +322,50 @@ module DiscoursePrometheus
         ["http_sql_duration_seconds", 1.0],
         ["http_redis_duration_seconds", 2.0],
         ["http_net_duration_seconds", 3.0],
+        ["http_gc_duration_seconds", 4.0],
       ].each { |metric_name, sum| assert_metric.call(metric_name, sum) }
+
+      expect(exported.find { |metric| metric.name == "http_gc_major_count" }.to_h).to eq(
+        {
+          controller: "list",
+          action: "latest",
+          success: true,
+          cache: false,
+          logged_in: true,
+          content_type: "json",
+        } =>
+          5,
+        {
+          controller: "list",
+          action: "latest",
+          success: false,
+          cache: true,
+          logged_in: false,
+          content_type: "html",
+        } =>
+          5,
+      )
+
+      expect(exported.find { |metric| metric.name == "http_gc_minor_count" }.to_h).to eq(
+        {
+          controller: "list",
+          action: "latest",
+          success: true,
+          cache: false,
+          logged_in: true,
+          content_type: "json",
+        } =>
+          6,
+        {
+          controller: "list",
+          action: "latest",
+          success: false,
+          cache: true,
+          logged_in: false,
+          content_type: "html",
+        } =>
+          6,
+      )
     end
   end
 end

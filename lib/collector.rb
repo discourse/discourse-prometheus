@@ -18,6 +18,9 @@ module ::DiscoursePrometheus
       @http_sql_duration_seconds = nil
       @http_net_duration_seconds = nil
       @http_queue_duration_seconds = nil
+      @http_gc_duration_seconds = nil
+      @http_gc_major_count = nil
+      @http_gc_minor_count = nil
       @http_forced_anon_count = nil
 
       @scheduled_job_duration_seconds = nil
@@ -252,6 +255,18 @@ module ::DiscoursePrometheus
             "Time spent queueing requests between NGINX and Ruby",
           )
 
+        @http_gc_duration_seconds =
+          Summary.new(
+            "http_gc_duration_seconds",
+            "Time spent in garbage collection within HTTP reqs in seconds",
+          )
+
+        @http_gc_major_count =
+          Gauge.new("http_gc_major_count", "Number of major GC runs per request")
+
+        @http_gc_minor_count =
+          Gauge.new("http_gc_minor_count", "Number of minor GC runs per request")
+
         @http_sql_calls_per_request =
           Gauge.new("http_sql_calls_per_request", "How many SQL statements ran per request")
 
@@ -260,6 +275,7 @@ module ::DiscoursePrometheus
             "http_anon_cache_store",
             "How many a payload is stored in redis for anonymous cache",
           )
+
         @http_anon_cache_hit =
           Counter.new(
             "http_anon_cache_hit",
@@ -305,6 +321,10 @@ module ::DiscoursePrometheus
       @http_net_duration_seconds.observe(metric.net_duration, labels)
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
       @http_sql_calls_per_request.observe(metric.sql_calls, labels)
+
+      @http_gc_duration_seconds.observe(metric.gc_duration, labels) if metric.gc_duration
+      @http_gc_major_count.observe(metric.gc_major_count, labels) if metric.gc_major_count
+      @http_gc_minor_count.observe(metric.gc_minor_count, labels) if metric.gc_minor_count
 
       if cache = metric.cache
         if cache == "store"
@@ -418,6 +438,9 @@ module ::DiscoursePrometheus
           @http_sql_duration_seconds,
           @http_net_duration_seconds,
           @http_queue_duration_seconds,
+          @http_gc_duration_seconds,
+          @http_gc_major_count,
+          @http_gc_minor_count,
           @http_forced_anon_count,
           @http_sql_calls_per_request,
           @http_anon_cache_store,

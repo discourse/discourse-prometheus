@@ -127,6 +127,11 @@ module DiscoursePrometheus::InternalMetric
               duration: 0.3,
               calls: 6,
             },
+            gc: {
+              time: 0.4,
+              major_count: 7,
+              minor_count: 8,
+            },
           },
         }
 
@@ -138,6 +143,10 @@ module DiscoursePrometheus::InternalMetric
 
         expect(metric.sql_calls).to eq(5)
         expect(metric.redis_calls).to eq(6)
+
+        expect(metric.gc_duration).to eq(0.4)
+        expect(metric.gc_major_count).to eq(7)
+        expect(metric.gc_minor_count).to eq(8)
       end
     end
   end

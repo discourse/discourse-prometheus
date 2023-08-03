@@ -90,8 +90,9 @@ module DiscoursePrometheus::Reporter
       metric.minor_gc_count = stat[:minor_gc_count]
 
       if major_by = GC.latest_gc_info(:major_by)
-        metric.gc_major_by[major_by] ||= 0
-        metric.gc_major_by[major_by] += 1
+        key = { reason: major_by.to_s }
+        metric.gc_major_by[key] ||= 0
+        metric.gc_major_by[key] += 1
       end
 
       metric.total_allocated_objects = stat[:total_allocated_objects]

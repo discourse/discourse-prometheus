@@ -3,7 +3,6 @@
 module DiscoursePrometheus::InternalMetric
   class Process < Base
     GAUGES = {
-      gc_major_by: "Reason the last major GC was triggered",
       heap_free_slots: "Free ruby heap slots",
       heap_live_slots: "Used ruby heap slots",
       v8_heap_size: "Total JavaScript V8 heap size (bytes)",
@@ -20,6 +19,7 @@ module DiscoursePrometheus::InternalMetric
     }
 
     COUNTERS = {
+      gc_major_by: "Reason the last major GC was triggered",
       major_gc_count: "Major GC operations by process",
       minor_gc_count: "Minor GC operations by process",
       total_allocated_objects: "Total number of allocateds objects by process",

@@ -15,9 +15,12 @@ module DiscoursePrometheus
       ctx = MiniRacer::Context.new
       ctx.eval("")
 
+      GC.expects(:latest_gc_info).with(:major_by).returns(:nofree)
+
       metric = Reporter::Process.new(:web).collect
 
       expect(metric.type).to eq("web")
+      expect(metric.gc_major_by).to eq({ nofree: 1 })
 
       check_for(
         metric,

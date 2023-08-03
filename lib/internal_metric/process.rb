@@ -3,6 +3,7 @@
 module DiscoursePrometheus::InternalMetric
   class Process < Base
     GAUGES = {
+      gc_major_by: "Reason the last major GC was triggered",
       heap_free_slots: "Free ruby heap slots",
       heap_live_slots: "Used ruby heap slots",
       v8_heap_size: "Total JavaScript V8 heap size (bytes)",
@@ -26,6 +27,7 @@ module DiscoursePrometheus::InternalMetric
     }
 
     attribute :type,
+              :gc_major_by,
               :heap_free_slots,
               :heap_live_slots,
               :major_gc_count,
@@ -47,6 +49,7 @@ module DiscoursePrometheus::InternalMetric
 
     def initialize
       @active_record_connections_count = {}
+      @gc_major_by = {}
     end
   end
 end

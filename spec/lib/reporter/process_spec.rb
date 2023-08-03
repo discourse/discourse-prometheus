@@ -20,7 +20,7 @@ module DiscoursePrometheus
       metric = Reporter::Process.new(:web).collect
 
       expect(metric.type).to eq("web")
-      expect(metric.gc_major_by).to eq({ nofree: 1 })
+      expect(metric.gc_major_by).to eq({ { reason: "nofree" } => 1 })
 
       check_for(
         metric,

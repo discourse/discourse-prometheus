@@ -26,7 +26,8 @@ module DiscoursePrometheus::InternalMetric
               :scheduled_jobs_stuck,
               :missing_s3_uploads,
               :version_info,
-              :readonly_sites
+              :readonly_sites,
+              :postgres_highest_sequence
 
     def initialize
       @active_app_reqs = 0
@@ -165,11 +166,15 @@ module DiscoursePrometheus::InternalMetric
       @missing_s3_uploads = missing_uploads("s3")
 
       @readonly_sites = collect_readonly_sites
+
+      @postgres_highest_sequence = calc_postgres_highest_sequence
     end
 
     # For testing purposes
     def reset!
       @@missing_uploads = nil
+      @@postgres_highest_sequence_last_check = nil
+      @@postgres_highest_sequence_cache = nil
     end
 
     private
@@ -338,6 +343,35 @@ module DiscoursePrometheus::InternalMetric
         stats[labels] += 1
       end
       stats
+    end
+
+    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
+
+    def calc_postgres_highest_sequence
+      @@postgres_highest_sequence_last_check ||= 0
+
+      if @@postgres_highest_sequence_last_check >= Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
+        return @@postgres_highest_sequence_cache
+      end
+
+      @@postgres_highest_sequence_last_check = Time.now
+
+      result = {}
+
+      RailsMultisite::ConnectionManagement.each_connection do |db|
+        result[{ db: db }] = DB.query_single(<<~SQL)[0]
+          SELECT last_value
+          FROM pg_sequences
+          ORDER BY last_value DESC NULLS LAST
+          LIMIT 1
+        SQL
+      end
+
+      @@postgres_highest_sequence_cache = result
+    rescue => e
+      if @postgres_master_available == 1
+        Discourse.warn_exception(e, message: "Failed to collect postgres_highest_sequence value")
+      end
     end
   end
 end

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 # name: discourse-prometheus
-# about: prometheus data collector for discourse
+# about: Collects key metrics from Discourse for Prometheus data analytics.
+# meta_topic_id: 72666
 # version: 0.1
 # authors: Sam Saffron
 # url: https://github.com/discourse/discourse-prometheus

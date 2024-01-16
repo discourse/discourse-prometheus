@@ -11,7 +11,8 @@ describe ::DiscoursePrometheus::JobMetricInitializer do
   end
 
   it "can enumerate scheduled jobs" do
-    Jobs::Heartbeat # ensure class is loaded (in prod, classes are eager-loaded)
+    # ensure class is loaded (in prod, classes are eager-loaded)
+    Jobs::Heartbeat # rubocop:disable Lint/Void
 
     metrics = []
     DiscoursePrometheus::JobMetricInitializer.each_scheduled_job_metric { |m| metrics << m }

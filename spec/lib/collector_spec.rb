@@ -287,7 +287,7 @@ module DiscoursePrometheus
 
       exported = collector.prometheus_metrics
 
-      assert_metric = ->(metric_name, sum) {
+      assert_metric = ->(metric_name, sum) do
         metrics = exported.find { |metric| metric.name == metric_name }
 
         expect(metrics.to_h).to eq(
@@ -314,7 +314,7 @@ module DiscoursePrometheus
             "sum" => sum,
           },
         )
-      }
+      end
 
       [
         ["http_duration_seconds", 14.0],

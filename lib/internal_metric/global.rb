@@ -318,7 +318,7 @@ module DiscoursePrometheus::InternalMetric
             end
           end
 
-        next unless started_at < (Time.now - allowed_duration)
+        next if started_at >= (Time.now - allowed_duration)
 
         labels = { job_name: klass.name }
         stats[labels] ||= 0
@@ -337,7 +337,7 @@ module DiscoursePrometheus::InternalMetric
       stats = {}
       Sidekiq::Workers.new.each do |queue, tid, work|
         next unless queue.start_with?(hostname)
-        next unless Time.at(work["run_at"]) < (Time.now - 60 * STUCK_SIDEKIQ_JOB_MINUTES)
+        next if Time.at(work["run_at"]) >= (Time.now - 60 * STUCK_SIDEKIQ_JOB_MINUTES)
         labels = { job_name: work.dig("payload", "class") }
         stats[labels] ||= 0
         stats[labels] += 1

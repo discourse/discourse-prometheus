@@ -13,8 +13,6 @@ Process.setproctitle("discourse prometheus-collector")
   spec.activate
 end
 
-require 'thread'
-require 'set'
 require 'oj'
 require 'prometheus_exporter'
 require 'prometheus_exporter/server'

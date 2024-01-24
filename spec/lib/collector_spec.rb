@@ -99,7 +99,9 @@ module DiscoursePrometheus
 
       ar = metrics.find { |metric| metric.name == "active_record_connections_count" }
 
-      expect(ar.data[type: "web", pid: Process.pid, status: "busy"]).to be > 0
+      expect(
+        ar.data[type: "web", pid: Process.pid, status: "busy", database: "discourse_test"],
+      ).to be > 0
     end
 
     describe "job_exception_stats" do

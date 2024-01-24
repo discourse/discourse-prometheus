@@ -118,9 +118,11 @@ module DiscoursePrometheus::Reporter
       ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
         if !pool.connections.nil?
           stat = pool.stat
+          database = pool.db_config.database.to_s
 
           %i[busy dead idle waiting].each do |status|
-            key = { status: status.to_s }
+            key = { status: status.to_s, database: database }
+
             metric.active_record_connections_count[key] ||= 0
             metric.active_record_connections_count[key] += stat[status]
           end

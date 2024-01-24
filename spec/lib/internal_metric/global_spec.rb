@@ -113,13 +113,15 @@ module DiscoursePrometheus::InternalMetric
       end
     end
 
-    it "can collect pg_seq metric" do
-      3.times { Fabricate(:user) }
-
+    it "can collect pg_seq metric and caches the sequence" do
       metric.collect
 
       expect(metric.postgres_highest_sequence).to be_a_kind_of(Hash)
-      expect(metric.postgres_highest_sequence[{ db: "default" }]).to be > 3
+      expect(metric.postgres_highest_sequence[{ db: "default" }]).to be_present
+
+      expect do metric.collect end.not_to change {
+        metric.class.class_variable_get(:@@postgres_highest_sequence_last_check)
+      }
     end
   end
 end

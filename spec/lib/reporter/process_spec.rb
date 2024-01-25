@@ -42,19 +42,21 @@ module DiscoursePrometheus
       it "can collect active_record_connections_count" do
         metric = Reporter::Process.new(:web).collect
 
+        database = ActiveRecord::Base.connection_pool.db_config.database
+
         expect(
-          metric.active_record_connections_count[{ database: "discourse_test", status: "busy" }],
+          metric.active_record_connections_count[{ database: database, status: "busy" }],
         ).to be_present
 
         expect(
-          metric.active_record_connections_count[{ database: "discourse_test", status: "idle" }],
+          metric.active_record_connections_count[{ database: database, status: "idle" }],
         ).to be_present
 
         expect(
-          metric.active_record_connections_count[{ database: "discourse_test", status: "dead" }],
+          metric.active_record_connections_count[{ database: database, status: "dead" }],
         ).to be_present
         expect(
-          metric.active_record_connections_count[{ database: "discourse_test", status: "waiting" }],
+          metric.active_record_connections_count[{ database: database, status: "waiting" }],
         ).to be_present
       end
     end

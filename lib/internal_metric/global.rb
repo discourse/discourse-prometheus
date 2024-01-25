@@ -354,7 +354,7 @@ module DiscoursePrometheus::InternalMetric
         return @@postgres_highest_sequence_cache
       end
 
-      @@postgres_highest_sequence_last_check = Time.now
+      @@postgres_highest_sequence_last_check = Time.now.to_i
 
       result = {}
 

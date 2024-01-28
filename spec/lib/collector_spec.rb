@@ -100,12 +100,7 @@ module DiscoursePrometheus
       ar = metrics.find { |metric| metric.name == "active_record_connections_count" }
 
       expect(
-        ar.data[
-          type: "web",
-          pid: Process.pid,
-          status: "busy",
-          database: ActiveRecord::Base.connection_pool.db_config.database
-        ],
+        ar.data[type: "web", pid: Process.pid, status: "busy", database: "discourse_test"],
       ).to be > 0
     end
 

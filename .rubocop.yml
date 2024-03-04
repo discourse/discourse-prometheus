@@ -3,3 +3,7 @@ inherit_gem:
 
 Style/GlobalVars:
   AllowedVariables: [$prometheus_client, $parent_pid, $port, $pid_file]
+
+Plugins/Discourse/NamespaceMethods:
+  Exclude:
+    - bin/**/*

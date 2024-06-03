@@ -257,7 +257,15 @@ module DiscoursePrometheus::InternalMetric
            (!last_check || (Time.now.to_i - last_check > MISSING_UPLOADS_CHECK_SECONDS))
         begin
           RailsMultisite::ConnectionManagement.each_connection do |db|
-            next if !SiteSetting.enable_s3_inventory
+            if SiteSetting.respond_to?(:s3_inventory_object_key)
+              next if SiteSetting.s3_inventory_object_key.blank?
+            end
+
+            # For backwards compatibilitiy
+            if SiteSetting.respond_to?(:enable_s3_inventory)
+              next if !SiteSetting.enable_s3_inventory
+            end
+
             @@missing_uploads[type][:stats][{ db: db }] = Discourse.stats.get(
               "missing_#{type}_uploads",
             )

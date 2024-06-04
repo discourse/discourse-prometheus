@@ -32,15 +32,7 @@ module DiscoursePrometheus::InternalMetric
     end
 
     describe "missing_s3_uploads metric" do
-      before do
-        SiteSetting.enable_s3_uploads = true
-        SiteSetting.s3_region = "us-west-1"
-        SiteSetting.s3_upload_bucket = "s3-upload-bucket"
-        SiteSetting.s3_access_key_id = "some key"
-        SiteSetting.s3_secret_access_key = "some secrets3_region key"
-
-        SiteSetting.enable_s3_inventory = true
-      end
+      before { SiteSetting.s3_inventory_object_key = "some-bucket/some/prefix" }
 
       it "should collect the missing upload metrics" do
         Discourse.stats.set("missing_s3_uploads", 2)
@@ -68,8 +60,8 @@ module DiscoursePrometheus::InternalMetric
         expect(metric.missing_s3_uploads).to eq({ db: db } => 0)
       end
 
-      context "when S3 inventory is disabled for the site" do
-        before { SiteSetting.enable_s3_inventory = false }
+      context "when `s3_inventory_object_key` has not been set for the site" do
+        before { SiteSetting.s3_inventory_object_key = nil }
 
         it "does not expose the metric" do
           Discourse.stats.set("missing_s3_uploads", 2)

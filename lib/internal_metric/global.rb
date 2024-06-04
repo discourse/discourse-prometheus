@@ -261,7 +261,7 @@ module DiscoursePrometheus::InternalMetric
               next if SiteSetting.s3_inventory_object_key.blank?
             end
 
-            # For backwards compatibilitiy
+            # For backward compatibility
             if SiteSetting.respond_to?(:enable_s3_inventory)
               next if !SiteSetting.enable_s3_inventory
             end

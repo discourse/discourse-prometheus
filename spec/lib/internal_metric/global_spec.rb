@@ -31,44 +31,46 @@ module DiscoursePrometheus::InternalMetric
       expect(value).to eq(1)
     end
 
-    describe "missing_s3_uploads metric" do
-      before { SiteSetting.s3_inventory_object_key = "some-bucket/some/prefix" }
+    if SiteSetting.respond_to?("s3_inventory_object_key")
+      describe "missing_s3_uploads metric" do
+        before { SiteSetting.s3_inventory_object_key = "some-bucket/some/prefix" }
 
-      it "should collect the missing upload metrics" do
-        Discourse.stats.set("missing_s3_uploads", 2)
-
-        metric.collect
-
-        expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
-      end
-
-      it "should throttle the collection of missing upload metrics" do
-        Discourse.stats.set("missing_s3_uploads", 2)
-
-        metric.collect
-
-        expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
-
-        Discourse.stats.set("missing_s3_uploads", 0)
-        metric.collect
-
-        expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
-
-        metric.reset!
-        metric.collect
-
-        expect(metric.missing_s3_uploads).to eq({ db: db } => 0)
-      end
-
-      context "when `s3_inventory_object_key` has not been set for the site" do
-        before { SiteSetting.s3_inventory_object_key = nil }
-
-        it "does not expose the metric" do
+        it "should collect the missing upload metrics" do
           Discourse.stats.set("missing_s3_uploads", 2)
 
           metric.collect
 
-          expect(metric.missing_s3_uploads).to eq({})
+          expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
+        end
+
+        it "should throttle the collection of missing upload metrics" do
+          Discourse.stats.set("missing_s3_uploads", 2)
+
+          metric.collect
+
+          expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
+
+          Discourse.stats.set("missing_s3_uploads", 0)
+          metric.collect
+
+          expect(metric.missing_s3_uploads).to eq({ db: db } => 2)
+
+          metric.reset!
+          metric.collect
+
+          expect(metric.missing_s3_uploads).to eq({ db: db } => 0)
+        end
+
+        context "when `s3_inventory_object_key` has not been set for the site" do
+          before { SiteSetting.s3_inventory_object_key = nil }
+
+          it "does not expose the metric" do
+            Discourse.stats.set("missing_s3_uploads", 2)
+
+            metric.collect
+
+            expect(metric.missing_s3_uploads).to eq({})
+          end
         end
       end
     end

@@ -31,9 +31,9 @@ module DiscoursePrometheus::InternalMetric
       expect(value).to eq(1)
     end
 
-    if SiteSetting.respond_to?("s3_inventory_object_key")
+    if SiteSetting.respond_to?("s3_inventory_bucket")
       describe "missing_s3_uploads metric" do
-        before { SiteSetting.s3_inventory_object_key = "some-bucket/some/prefix" }
+        before { SiteSetting.s3_inventory_bucket = "some-bucket/some/prefix" }
 
         it "should collect the missing upload metrics" do
           Discourse.stats.set("missing_s3_uploads", 2)
@@ -61,8 +61,8 @@ module DiscoursePrometheus::InternalMetric
           expect(metric.missing_s3_uploads).to eq({ db: db } => 0)
         end
 
-        context "when `s3_inventory_object_key` has not been set for the site" do
-          before { SiteSetting.s3_inventory_object_key = nil }
+        context "when `s3_inventory_bucket` has not been set for the site" do
+          before { SiteSetting.s3_inventory_bucket = nil }
 
           it "does not expose the metric" do
             Discourse.stats.set("missing_s3_uploads", 2)

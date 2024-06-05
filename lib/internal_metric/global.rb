@@ -257,8 +257,8 @@ module DiscoursePrometheus::InternalMetric
            (!last_check || (Time.now.to_i - last_check > MISSING_UPLOADS_CHECK_SECONDS))
         begin
           RailsMultisite::ConnectionManagement.each_connection do |db|
-            if SiteSetting.respond_to?(:s3_inventory_object_key)
-              next if SiteSetting.s3_inventory_object_key.blank?
+            if SiteSetting.respond_to?(:s3_inventory_bucket)
+              next if SiteSetting.s3_inventory_bucket.blank?
             end
 
             # For backward compatibility

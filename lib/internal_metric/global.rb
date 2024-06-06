@@ -211,7 +211,7 @@ module DiscoursePrometheus::InternalMetric
       end
 
       connection = ActiveRecord::Base.postgresql_connection(config)
-      connection.active? ? 1 : 0
+      connection.tap(&:verify!).active? ? 1 : 0
     rescue StandardError
       0
     ensure

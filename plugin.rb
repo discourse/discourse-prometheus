@@ -10,7 +10,7 @@
 module ::DiscoursePrometheus
 end
 
-gem "webrick", "1.7.0"
+gem "webrick", "1.8.1"
 gem "prometheus_exporter", "2.0.6"
 
 require "prometheus_exporter/client"

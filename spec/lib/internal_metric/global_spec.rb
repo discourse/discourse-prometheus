@@ -113,8 +113,12 @@ module DiscoursePrometheus::InternalMetric
       expect(metric.postgres_highest_sequence).to be_a_kind_of(Hash)
       expect(metric.postgres_highest_sequence[{ db: "default" }]).to be_present
 
+      expect(metric.postgres_highest_sequence_usage).to be_a_kind_of(Hash)
+      expect(metric.postgres_highest_sequence_usage[{ db: "default" }]).to be_present
+
       expect do metric.collect end.not_to change {
         metric.class.class_variable_get(:@@postgres_highest_sequence_last_check)
+        metric.class.class_variable_get(:@@postgres_highest_sequence_usage_last_check)
       }
     end
   end

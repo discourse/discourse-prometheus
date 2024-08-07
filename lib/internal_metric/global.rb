@@ -291,29 +291,17 @@ module DiscoursePrometheus::InternalMetric
     def find_stuck_scheduled_jobs
       hostname = ::PrometheusExporter.hostname
       stats = {}
-      MiniScheduler::Manager.discover_schedules.each do |klass|
-        info_key =
-          (
-            if klass.is_per_host
-              MiniScheduler::Manager.schedule_key(klass, hostname)
-            else
-              MiniScheduler::Manager.schedule_key(klass)
-            end
-          )
-        schedule_info = Discourse.redis.get(info_key)
-        schedule_info =
-          begin
-            JSON.parse(schedule_info, symbolize_names: true)
-          rescue StandardError
-            nil
+
+      MiniScheduler::Manager.discover_running_scheduled_jobs.each do |job|
+        job_class = job[:class]
+        started_at = job[:started_at]
+
+        job_frequency =
+          if job_class.daily
+            1.day
+          else
+            job_class.every.in_minutes.minutes
           end
-
-        next if !schedule_info
-        next if !schedule_info[:prev_result] == "RUNNING" # Only look at jobs which are running
-        next if !schedule_info[:current_owner]&.start_with?("_scheduler_#{hostname}") # Only look at jobs on this host
-
-        job_frequency = klass.every || 1.day
-        started_at = Time.at(schedule_info[:prev_run])
 
         allowed_duration =
           begin
@@ -328,10 +316,11 @@ module DiscoursePrometheus::InternalMetric
 
         next if started_at >= (Time.now - allowed_duration)
 
-        labels = { job_name: klass.name }
+        labels = { job_name: job_class }
         stats[labels] ||= 0
         stats[labels] += 1
       end
+
       stats
     rescue => e
       Discourse.warn_exception(

@@ -16,7 +16,7 @@ class DiscoursePrometheus::GlobalReporterDemon < ::Demon::Base
   end
 
   def after_fork
-    STDERR.puts "#{Time.now}: Starting Prometheus global reporter pid: #{Process.pid}"
+    @logger.info("Starting Prometheus global reporter pid: #{Process.pid}")
     t = DiscoursePrometheus::Reporter::Global.start($prometheus_client)
 
     trap("INT") { DiscoursePrometheus::Reporter::Global.stop }
@@ -24,7 +24,7 @@ class DiscoursePrometheus::GlobalReporterDemon < ::Demon::Base
     trap("QUIT") { DiscoursePrometheus::Reporter::Global.stop }
 
     t.join
-    STDERR.puts "#{Time.now}: Stopping Prometheus global reporter pid: #{Process.pid}"
+    @logger.info("Stopping Prometheus global reporter pid: #{Process.pid}")
     exit 0
   end
 end

@@ -1,9 +1,13 @@
 inherit_gem:
   rubocop-discourse: stree-compat.yml
 
+AllCops:
+  Exclude:
+    - gems/**/*
+
 Style/GlobalVars:
   AllowedVariables: [$prometheus_client, $parent_pid, $port, $pid_file]
 
-Plugins/Discourse/NamespaceMethods:
+Discourse/Plugins/NamespaceMethods:
   Exclude:
     - bin/**/*

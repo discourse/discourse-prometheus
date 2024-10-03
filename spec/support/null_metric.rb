@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module DiscoursePrometheus
-  class NullMetric < ::DiscoursePrometheus::InternalMetric::Custom
+  class NullMetric < InternalMetric::Custom
     attribute :name, :labels, :description, :value, :type
 
     def initialize

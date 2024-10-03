@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
-describe ::DiscoursePrometheus::Middleware::Metrics do
-  let :middleware do
+RSpec.describe DiscoursePrometheus::Middleware::Metrics do
+  let(:middleware) do
     app = lambda { |env| [404, {}, ["not found"]] }
-    ::DiscoursePrometheus::Middleware::Metrics.new(app)
+    DiscoursePrometheus::Middleware::Metrics.new(app)
   end
 
-  it "will 404 for unauthed if prometheus_trusted_ip_allowlist_regex is unset" do
+  it "404s for unauthenticated if prometheus_trusted_ip_allowlist_regex is unset" do
     status, =
       middleware.call(
         "PATH_INFO" => "/metrics",
@@ -18,7 +16,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(status).to eq(404)
   end
 
-  it "will 404 for unauthed" do
+  it "404s for unauthenticated" do
     status, =
       middleware.call(
         "PATH_INFO" => "/metrics",
@@ -28,7 +26,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(status).to eq(404)
   end
 
-  it "will 404 for unauthed and invalid regex" do
+  it "404s for unauthenticated and invalid regex" do
     global_setting :prometheus_trusted_ip_allowlist_regex, "unbalanced bracket["
     status, =
       middleware.call(
@@ -39,7 +37,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(status).to eq(404)
   end
 
-  it "will 404 for unauthed empty regex" do
+  it "404s for unauthenticated empty regex" do
     status, =
       middleware.call(
         "PATH_INFO" => "/metrics",
@@ -49,7 +47,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(status).to eq(404)
   end
 
-  it "will 404 for public IP addresses" do
+  it "404s for public IP addresses" do
     addresses = %w[
       62.127.0.1
       62.192.168.1
@@ -70,7 +68,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     end
   end
 
-  it "can proxy the dedicated port for private IP addresses" do
+  it "proxies the dedicated port for private IP addresses" do
     stub_request(
       :get,
       "http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics",
@@ -97,7 +95,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     end
   end
 
-  it "can proxy the dedicated port even with invalid regex" do
+  it "proxies the dedicated port even with invalid regex" do
     global_setting :prometheus_trusted_ip_allowlist_regex, "unbalanced bracket["
     stub_request(
       :get,
@@ -113,7 +111,7 @@ describe ::DiscoursePrometheus::Middleware::Metrics do
     expect(body).to include("hello world")
   end
 
-  it "can proxy the dedicated port on trusted IP" do
+  it "proxies the dedicated port on trusted IP" do
     global_setting :prometheus_trusted_ip_allowlist_regex, "(200\.0)"
     stub_request(
       :get,

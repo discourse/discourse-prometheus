@@ -1,6 +1,10 @@
 inherit_gem:
   rubocop-discourse: stree-compat.yml
 
+inherit_mode:
+  merge:
+    - Exclude
+
 AllCops:
   Exclude:
     - gems/**/*

@@ -27,7 +27,6 @@ module DiscoursePrometheus::InternalMetric
               :missing_s3_uploads,
               :version_info,
               :readonly_sites,
-              :postgres_highest_sequence,
               :postgres_highest_sequence_usage
 
     def initialize
@@ -168,16 +167,12 @@ module DiscoursePrometheus::InternalMetric
 
       @readonly_sites = collect_readonly_sites
 
-      @postgres_highest_sequence = calc_postgres_highest_sequence
-
       @postgres_highest_sequence_usage = calc_postgres_highest_sequence_usage
     end
 
     # For testing purposes
     def reset!
       @@missing_uploads = nil
-      @@postgres_highest_sequence_last_check = nil
-      @@postgres_highest_sequence_cache = nil
       @@postgres_highest_sequence_usage_last_check = nil
       @@postgres_highest_sequence_usage_cache = nil
     end
@@ -358,40 +353,13 @@ module DiscoursePrometheus::InternalMetric
       stats
     end
 
-    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
-
-    def calc_postgres_highest_sequence
-      @@postgres_highest_sequence_last_check ||= 0
-
-      if @@postgres_highest_sequence_last_check >= Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
-        return @@postgres_highest_sequence_cache
-      end
-
-      @@postgres_highest_sequence_last_check = Time.now.to_i
-
-      result = {}
-
-      RailsMultisite::ConnectionManagement.each_connection do |db|
-        result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          SELECT last_value
-          FROM pg_sequences
-          ORDER BY last_value DESC NULLS LAST
-          LIMIT 1
-        SQL
-      end
-
-      @@postgres_highest_sequence_cache = result
-    rescue => e
-      if @postgres_master_available == 1
-        Discourse.warn_exception(e, message: "Failed to collect postgres_highest_sequence value")
-      end
-    end
+    PG_HIGHEST_SEQUENCE_USAGE_CHECK_SECONDS = 60
 
     def calc_postgres_highest_sequence_usage
       @@postgres_highest_sequence_usage_last_check ||= 0
 
       if @@postgres_highest_sequence_usage_last_check >=
-           Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
+           Time.now.to_i - PG_HIGHEST_SEQUENCE_USAGE_CHECK_SECONDS
         return @@postgres_highest_sequence_usage_cache
       end
 
@@ -401,20 +369,7 @@ module DiscoursePrometheus::InternalMetric
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
         result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          WITH sequences AS (
-              SELECT table_name,
-                     column_name,
-                     information_schema.columns.data_type,
-                     COALESCE(last_value, 0) last_value,
-                     CASE information_schema.columns.data_type
-                         WHEN 'integer' THEN POWER(2, 31)
-                         WHEN 'bigint' THEN POWER(2, 63)
-                         ELSE NULL
-                     END max_value
-              FROM information_schema.columns
-              JOIN pg_sequences ON sequencename = REPLACE(REPLACE(column_default, 'nextval(''', ''), '''::regclass)', '')
-          )
-          SELECT MAX(last_value / max_value) FROM sequences
+          SELECT MAX(last_value::decimal / max_value) FROM pg_sequences
         SQL
       end
 

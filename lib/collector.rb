@@ -181,13 +181,8 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "postgres_highest_sequence",
-        "The highest last_value from the pg_sequences table",
-      )
-
-      global_metrics << Gauge.new(
         "postgres_highest_sequence_usage",
-        "The highest usage of the sequences. Usage is calculated as the ratio between last_value from the pg_sequences table and the determined maximum value for the column using the sequence",
+        "Highest Postgres sequences usage, calculated as the maximum ratio between last and maximum values across all sequences",
       )
 
       @global_metrics = global_metrics

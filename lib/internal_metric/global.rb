@@ -27,7 +27,7 @@ module DiscoursePrometheus::InternalMetric
               :missing_s3_uploads,
               :version_info,
               :readonly_sites,
-              :postgres_highest_sequence
+              :postgres_highest_sequence_usage
 
     def initialize
       @active_app_reqs = 0
@@ -167,14 +167,14 @@ module DiscoursePrometheus::InternalMetric
 
       @readonly_sites = collect_readonly_sites
 
-      @postgres_highest_sequence = calc_postgres_highest_sequence
+      @postgres_highest_sequence_usage = calc_postgres_highest_sequence_usage
     end
 
     # For testing purposes
     def reset!
       @@missing_uploads = nil
-      @@postgres_highest_sequence_last_check = nil
-      @@postgres_highest_sequence_cache = nil
+      @@postgres_highest_sequence_usage_last_check = nil
+      @@postgres_highest_sequence_usage_cache = nil
     end
 
     private
@@ -353,32 +353,33 @@ module DiscoursePrometheus::InternalMetric
       stats
     end
 
-    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
+    PG_HIGHEST_SEQUENCE_USAGE_CHECK_SECONDS = 60
 
-    def calc_postgres_highest_sequence
-      @@postgres_highest_sequence_last_check ||= 0
+    def calc_postgres_highest_sequence_usage
+      @@postgres_highest_sequence_usage_last_check ||= 0
 
-      if @@postgres_highest_sequence_last_check >= Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
-        return @@postgres_highest_sequence_cache
+      if @@postgres_highest_sequence_usage_last_check >=
+           Time.now.to_i - PG_HIGHEST_SEQUENCE_USAGE_CHECK_SECONDS
+        return @@postgres_highest_sequence_usage_cache
       end
 
-      @@postgres_highest_sequence_last_check = Time.now.to_i
+      @@postgres_highest_sequence_usage_last_check = Time.now.to_i
 
       result = {}
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
         result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          SELECT last_value
-          FROM pg_sequences
-          ORDER BY last_value DESC NULLS LAST
-          LIMIT 1
+          SELECT MAX(last_value::decimal / max_value) FROM pg_sequences
         SQL
       end
 
-      @@postgres_highest_sequence_cache = result
+      @@postgres_highest_sequence_usage_cache = result
     rescue => e
       if @postgres_master_available == 1
-        Discourse.warn_exception(e, message: "Failed to collect postgres_highest_sequence value")
+        Discourse.warn_exception(
+          e,
+          message: "Failed to collect postgres_highest_sequence_usage value",
+        )
       end
     end
   end

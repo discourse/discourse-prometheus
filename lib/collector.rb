@@ -28,6 +28,7 @@ module ::DiscoursePrometheus
       @sidekiq_job_duration_seconds = nil
       @sidekiq_job_count = nil
 
+      @uploads_count = nil
       @missing_s3_uploads = nil
 
       @process_metrics = []
@@ -167,6 +168,8 @@ module ::DiscoursePrometheus
         "scheduled_jobs_stuck",
         "Number of scheduled jobs which have been running for more than their expected duration",
       )
+
+      global_metrics << Gauge.new("uploads_count", "Number of uploads")
 
       global_metrics << Gauge.new("missing_s3_uploads", "Number of missing uploads in S3")
 

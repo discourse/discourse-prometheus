@@ -368,10 +368,25 @@ module DiscoursePrometheus::InternalMetric
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
         result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          SELECT last_value
-          FROM pg_sequences
-          ORDER BY last_value DESC NULLS LAST
-          LIMIT 1
+          WITH columns_and_sequences AS (
+            SELECT table_name,
+                   column_name,
+                   information_schema.columns.data_type column_type,
+                   pg_sequences.data_type::text sequence_type,
+                   COALESCE(last_value, 0) last_value
+            FROM information_schema.columns
+            JOIN pg_sequences ON sequencename = REPLACE(REPLACE(column_default, 'nextval(''', ''), '''::regclass)', '')
+            WHERE information_schema.columns.table_schema = 'public'
+          )
+          SELECT MAX(last_value)
+          FROM columns_and_sequences
+          WHERE column_type = 'integer' OR
+                -- The column and sequence types should match, but this is just an extra check.
+                sequence_type = 'integer' OR
+                -- The `id` column of these tables is a `bigint`, but the foreign key columns are usually integers.
+                -- These columns will be migrated in the future.
+                -- See https://github.com/discourse/discourse/blob/6e1aeb1f504f469ceed189c24d43a7a99b8970c7/spec/rails_helper.rb#L480-L490
+                table_name IN ('reviewables', 'flags', 'sidebar_sections')
         SQL
       end
 

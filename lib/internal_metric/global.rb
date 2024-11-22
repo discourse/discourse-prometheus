@@ -381,9 +381,11 @@ module DiscoursePrometheus::InternalMetric
           SELECT MAX(last_value)
           FROM columns_and_sequences
           WHERE column_type = 'integer' OR
-                -- The column and sequence types should match, but this is just an extra check
+                -- The column and sequence types should match, but this is just an extra check.
                 sequence_type = 'integer' OR
-                -- The `id` column of these tables is a `bigint`, but the foreign key columns are usually integers
+                -- The `id` column of these tables is a `bigint`, but the foreign key columns are usually integers.
+                -- These columns will be migrated in the future.
+                -- See https://github.com/discourse/discourse/blob/6e1aeb1f504f469ceed189c24d43a7a99b8970c7/spec/rails_helper.rb#L480-L490
                 table_name IN ('reviewables', 'flags', 'sidebar_sections')
         SQL
       end

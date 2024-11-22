@@ -353,7 +353,7 @@ module DiscoursePrometheus::InternalMetric
       stats
     end
 
-    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 21_600 #every six hours until query is faster
+    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
 
     def calc_postgres_highest_sequence
       @@postgres_highest_sequence_last_check ||= 0

@@ -372,16 +372,18 @@ module DiscoursePrometheus::InternalMetric
             SELECT table_name,
                    column_name,
                    information_schema.columns.data_type column_type,
-                   pg_sequences.data_type sequence_type,
+                   pg_sequences.data_type::text sequence_type,
                    COALESCE(last_value, 0) last_value
             FROM information_schema.columns
             JOIN pg_sequences ON sequencename = REPLACE(REPLACE(column_default, 'nextval(''', ''), '''::regclass)', '')
-            WHERE information_schema.table_schema = 'public'
+            WHERE information_schema.columns.table_schema = 'public'
           )
           SELECT MAX(last_value)
           FROM columns_and_sequences
           WHERE column_type = 'integer' OR
-                -- The `id` column of these tables is a bigint, but the foreign key columns are usually integers
+                -- The column and sequence types should match, but this is just an extra check
+                sequence_type = 'integer' OR
+                -- The `id` column of these tables is a `bigint`, but the foreign key columns are usually integers
                 table_name IN ('reviewables', 'flags', 'sidebar_sections')
         SQL
       end

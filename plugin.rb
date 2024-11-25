@@ -41,6 +41,8 @@ DiscoursePluginRegistry.define_filtered_register :global_collectors
 Rails.configuration.middleware.unshift DiscoursePrometheus::Middleware::Metrics
 
 after_initialize do
+  require_relative("app/jobs/scheduled/update_stats")
+
   $prometheus_client =
     PrometheusExporter::Client.new(host: "localhost", port: GlobalSetting.prometheus_collector_port)
 

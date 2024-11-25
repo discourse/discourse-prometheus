@@ -173,8 +173,6 @@ module DiscoursePrometheus::InternalMetric
     # For testing purposes
     def reset!
       @@missing_uploads = nil
-      @@postgres_highest_sequence_last_check = nil
-      @@postgres_highest_sequence_cache = nil
     end
 
     private
@@ -353,52 +351,14 @@ module DiscoursePrometheus::InternalMetric
       stats
     end
 
-    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
-
     def calc_postgres_highest_sequence
-      @@postgres_highest_sequence_last_check ||= 0
-
-      if @@postgres_highest_sequence_last_check >= Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
-        return @@postgres_highest_sequence_cache
-      end
-
-      @@postgres_highest_sequence_last_check = Time.now.to_i
-
       result = {}
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
-        result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          WITH columns AS MATERIALIZED (
-            SELECT table_name,
-                   column_name,
-                   data_type column_type,
-                   REPLACE(REPLACE(column_default, 'nextval(''', ''), '''::regclass)', '') sequence_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public' AND column_default LIKE '%nextval(''%'
-          ), sequences AS MATERIALIZED (
-            SELECT sequencename sequence_name,
-                   data_type::text sequence_type,
-                   COALESCE(last_value, 0) last_value
-            FROM pg_sequences
-          )
-          SELECT MAX(last_value)
-          FROM columns
-          JOIN sequences ON sequences.sequence_name = columns.sequence_name
-          WHERE columns.column_type = 'integer' OR
-                -- The column and sequence types should match, but this is just an extra check.
-                sequences.sequence_type = 'integer' OR
-                -- The `id` column of these tables is a `bigint`, but the foreign key columns are usually integers.
-                -- These columns will be migrated in the future.
-                -- See https://github.com/discourse/discourse/blob/6e1aeb1f504f469ceed189c24d43a7a99b8970c7/spec/rails_helper.rb#L480-L490
-                table_name IN ('reviewables', 'flags', 'sidebar_sections')
-        SQL
+        result[{ db: db }] = Discourse.stats.get("postgres_highest_sequence")
       end
 
-      @@postgres_highest_sequence_cache = result
-    rescue => e
-      if @postgres_master_available == 1
-        Discourse.warn_exception(e, message: "Failed to collect postgres_highest_sequence value")
-      end
+      result
     end
   end
 end

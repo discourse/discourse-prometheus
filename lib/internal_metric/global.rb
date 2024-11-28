@@ -173,8 +173,6 @@ module DiscoursePrometheus::InternalMetric
     # For testing purposes
     def reset!
       @@missing_uploads = nil
-      @@postgres_highest_sequence_last_check = nil
-      @@postgres_highest_sequence_cache = nil
     end
 
     private
@@ -353,33 +351,14 @@ module DiscoursePrometheus::InternalMetric
       stats
     end
 
-    PG_HIGHEST_SEQUENCE_CHECK_SECONDS = 60
-
     def calc_postgres_highest_sequence
-      @@postgres_highest_sequence_last_check ||= 0
-
-      if @@postgres_highest_sequence_last_check >= Time.now.to_i - PG_HIGHEST_SEQUENCE_CHECK_SECONDS
-        return @@postgres_highest_sequence_cache
-      end
-
-      @@postgres_highest_sequence_last_check = Time.now.to_i
-
       result = {}
 
       RailsMultisite::ConnectionManagement.each_connection do |db|
-        result[{ db: db }] = DB.query_single(<<~SQL)[0]
-          SELECT last_value
-          FROM pg_sequences
-          ORDER BY last_value DESC NULLS LAST
-          LIMIT 1
-        SQL
+        result[{ db: db }] = Discourse.stats.get("postgres_highest_sequence")
       end
 
-      @@postgres_highest_sequence_cache = result
-    rescue => e
-      if @postgres_master_available == 1
-        Discourse.warn_exception(e, message: "Failed to collect postgres_highest_sequence value")
-      end
+      result
     end
   end
 end

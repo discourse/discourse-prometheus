@@ -10,7 +10,7 @@
 module ::DiscoursePrometheus
 end
 
-gem "prometheus_exporter", "2.0.6"
+gem "prometheus_exporter", "2.2.0"
 
 require "prometheus_exporter/client"
 

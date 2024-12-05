@@ -3,12 +3,14 @@
 
 Process.setproctitle("discourse prometheus-collector")
 
-["prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}"].each do |spec_name|
-  spec_file =
-    File.expand_path("../../gems/#{RUBY_VERSION}/specifications/#{spec_name}.gemspec", __FILE__)
-  spec = Gem::Specification.load(spec_file)
-  spec.activate
-end
+spec_file =
+  File.expand_path(
+    "../../gems/#{RUBY_VERSION}/specifications/#{"prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}"}.gemspec",
+    __FILE__,
+  )
+
+spec = Gem::Specification.load(spec_file)
+spec.activate
 
 require "oj"
 require "prometheus_exporter"

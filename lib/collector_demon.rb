@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 #
 require_dependency "demon/base"
+require "webrick"
 
 class DiscoursePrometheus::CollectorDemon < ::Demon::Base
   def self.prefix

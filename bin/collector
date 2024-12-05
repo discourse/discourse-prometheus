@@ -3,30 +3,29 @@
 
 Process.setproctitle("discourse prometheus-collector")
 
-[
-  "webrick-#{ENV["WEBRICK_VERSION"]}",
-  "prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}",
-].each do |spec_name|
+["prometheus_exporter-#{ENV["PROMETHEUS_EXPORTER_VERSION"]}"].each do |spec_name|
   spec_file =
     File.expand_path("../../gems/#{RUBY_VERSION}/specifications/#{spec_name}.gemspec", __FILE__)
   spec = Gem::Specification.load(spec_file)
   spec.activate
 end
 
-require 'oj'
-require 'prometheus_exporter'
-require 'prometheus_exporter/server'
-require 'rbtrace' if ENV['RBTRACE'] == "1"
+require "oj"
+require "prometheus_exporter"
+require "prometheus_exporter/server"
+require "rbtrace" if ENV["RBTRACE"] == "1"
+require "webrick"
 
-module DiscoursePrometheus; end
+module DiscoursePrometheus
+end
 
-require_relative '../lib/internal_metric/base'
-require_relative '../lib/internal_metric/global'
-require_relative '../lib/internal_metric/job'
-require_relative '../lib/internal_metric/process'
-require_relative '../lib/internal_metric/web'
-require_relative '../lib/internal_metric/custom'
-require_relative '../lib/collector'
+require_relative "../lib/internal_metric/base"
+require_relative "../lib/internal_metric/global"
+require_relative "../lib/internal_metric/job"
+require_relative "../lib/internal_metric/process"
+require_relative "../lib/internal_metric/web"
+require_relative "../lib/internal_metric/custom"
+require_relative "../lib/collector"
 
 $port = ARGV[0].to_i
 bind = ARGV[1]
@@ -41,7 +40,7 @@ if $parent_pid > 0
     def alive?(pid)
       Process.kill(0, pid)
       File.read($pid_file).to_i == Process.pid
-    rescue
+    rescue StandardError
       false
     end
 
@@ -61,7 +60,7 @@ if $parent_pid > 0
   end
 end
 
-PrometheusExporter::Metric::Base.default_prefix = 'discourse_'
+PrometheusExporter::Metric::Base.default_prefix = "discourse_"
 
 collector = DiscoursePrometheus::Collector.new
 server = PrometheusExporter::Server::WebServer.new port: $port, bind: bind, collector: collector

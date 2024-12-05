@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 #
 require_dependency "demon/base"
-require "webrick"
 
 class DiscoursePrometheus::CollectorDemon < ::Demon::Base
   def self.prefix
@@ -18,7 +17,6 @@ class DiscoursePrometheus::CollectorDemon < ::Demon::Base
 
     ENV["RUBY_GLOBAL_METHOD_CACHE_SIZE"] = "2048"
     ENV["RUBY_GC_HEAP_INIT_SLOTS"] = "10000"
-    ENV["WEBRICK_VERSION"] = WEBrick::VERSION
     ENV["PROMETHEUS_EXPORTER_VERSION"] = PrometheusExporter::VERSION
 
     exec collector,

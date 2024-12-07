@@ -24,6 +24,7 @@ module DiscoursePrometheus::InternalMetric
               :sidekiq_workers,
               :sidekiq_jobs_stuck,
               :scheduled_jobs_stuck,
+              :uploads_count,
               :missing_s3_uploads,
               :version_info,
               :readonly_sites,
@@ -163,6 +164,7 @@ module DiscoursePrometheus::InternalMetric
 
       @sidekiq_paused = sidekiq_paused_states
 
+      @uploads_count = Upload.count
       @missing_s3_uploads = missing_uploads("s3")
 
       @readonly_sites = collect_readonly_sites

@@ -28,6 +28,12 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(value).to eq(1)
   end
 
+  it "collects the uploads_count metric" do
+    metric.collect
+
+    expect(metric.uploads_count).to eq(Upload.count)
+  end
+
   if SiteSetting.respond_to?("s3_inventory_bucket")
     describe "missing_s3_uploads metric" do
       before { SiteSetting.s3_inventory_bucket = "some-bucket/some/prefix" }

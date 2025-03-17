@@ -66,46 +66,36 @@ module DiscoursePrometheus::InternalMetric
       redis_config = GlobalSetting.redis_config
       redis_primary_running[{ type: "main" }] = test_redis(
         :master,
-        host: redis_config[:host],
-        port: redis_config[:port],
-        password: redis_config[:password],
-        ssl: redis_config[:ssl],
+        **redis_config.slice(:host, :port, :password, :ssl),
       )
       redis_replica_running[{ type: "main" }] = 0
 
-      if redis_config[:replica_host]
+      if redis_config[:custom] || redis_config[:replica_host]
         redis_replica_running[{ type: "main" }] = test_redis(
           :slave,
-          host: redis_config[:replica_host],
-          port: redis_config[:replica_port],
+          host: redis_config.dig(:custom, :replica_host) || redis_config[:replica_host],
+          port: redis_config.dig(:custom, :replica_port) || redis_config[:replica_port],
           password: redis_config[:password],
           ssl: redis_config[:ssl],
         )
-      else
-        redis_replica_running[{ type: "main" }] = 0
       end
 
       if GlobalSetting.message_bus_redis_enabled
         mb_redis_config = GlobalSetting.message_bus_redis_config
         redis_primary_running[{ type: "message-bus" }] = test_redis(
           :master,
-          host: mb_redis_config[:host],
-          port: mb_redis_config[:port],
-          password: mb_redis_config[:password],
-          ssl: mb_redis_config[:ssl],
+          **mb_redis_config.slice(:host, :port, :password, :ssl),
         )
         redis_replica_running[{ type: "message-bus" }] = 0
 
-        if mb_redis_config[:replica_host]
+        if mb_redis_config[:custom] || mb_redis_config[:replica_host]
           redis_replica_running[{ type: "message-bus" }] = test_redis(
             :slave,
-            host: mb_redis_config[:replica_host],
-            port: mb_redis_config[:replica_port],
+            host: mb_redis_config.dig(:custom, :replica_host) || mb_redis_config[:replica_host],
+            port: mb_redis_config.dig(:custom, :replica_port) || mb_redis_config[:replica_port],
             password: mb_redis_config[:password],
             ssl: mb_redis_config[:ssl],
           )
-        else
-          redis_replica_running[{ type: "message-bus" }] = 0
         end
       end
 

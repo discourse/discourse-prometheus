@@ -112,4 +112,73 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(metric.postgres_highest_sequence).to be_a_kind_of(Hash)
     expect(metric.postgres_highest_sequence[{ db: "default" }]).to be_present
   end
+
+  describe "Redis" do
+    context "when a replica has been configured for main Redis" do
+      before do
+        allow(GlobalSetting).to receive_messages(
+          get_redis_replica_host: GlobalSetting.redis_host,
+          get_redis_replica_port: GlobalSetting.redis_port,
+        )
+        GlobalSetting.reset_redis_config!
+        metric.collect
+      end
+
+      after { GlobalSetting.reset_redis_config! }
+
+      it "collects the right metrics" do
+        expect(metric).to have_attributes(
+          redis_primary_available: {
+            { type: "main" } => 1,
+          },
+          redis_master_available: {
+            { type: "main" } => 1,
+          },
+          redis_slave_available: {
+            { type: "main" } => 1,
+          },
+          redis_replica_available: {
+            { type: "main" } => 1,
+          },
+        )
+      end
+    end
+
+    context "when a replica has been configured for MessageBus Redis" do
+      before do
+        allow(GlobalSetting).to receive_messages(
+          message_bus_redis_enabled: true,
+          message_bus_redis_host: GlobalSetting.redis_host,
+          message_bus_redis_port: GlobalSetting.redis_port,
+          get_message_bus_redis_replica_host: GlobalSetting.redis_host,
+          get_message_bus_redis_replica_port: GlobalSetting.redis_port,
+        )
+        GlobalSetting.reset_redis_config!
+        metric.collect
+      end
+
+      after { GlobalSetting.reset_redis_config! }
+
+      it "collects the right metrics" do
+        expect(metric).to have_attributes(
+          redis_primary_available: {
+            { type: "main" } => 1,
+            { type: "message-bus" } => 1,
+          },
+          redis_master_available: {
+            { type: "main" } => 1,
+            { type: "message-bus" } => 1,
+          },
+          redis_slave_available: {
+            { type: "main" } => 0,
+            { type: "message-bus" } => 1,
+          },
+          redis_replica_available: {
+            { type: "main" } => 0,
+            { type: "message-bus" } => 1,
+          },
+        )
+      end
+    end
+  end
 end

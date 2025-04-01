@@ -27,7 +27,8 @@ module DiscoursePrometheus::InternalMetric
               :missing_s3_uploads,
               :version_info,
               :readonly_sites,
-              :postgres_highest_sequence
+              :postgres_highest_sequence,
+              :tmp_dir_available_bytes
 
     def initialize
       @active_app_reqs = 0
@@ -158,6 +159,8 @@ module DiscoursePrometheus::InternalMetric
       @readonly_sites = collect_readonly_sites
 
       @postgres_highest_sequence = calc_postgres_highest_sequence
+
+      @tmp_dir_available_bytes = collect_dir_stats("/tmp")
     end
 
     # For testing purposes
@@ -178,6 +181,21 @@ module DiscoursePrometheus::InternalMetric
       end
 
       result
+    end
+
+    def collect_dir_stats(dir)
+      stdout, status = Open3.capture2("df", "-B1", dir)
+      return nil if !status.success?
+
+      begin
+        dirstat = stdout.lines[-1].split()
+        dirstat[3].to_i
+      rescue Exception => e
+        Discourse.warn_exception(
+          e,
+          message: "Failed to read disk usage for tmp_dir_available_bytes metric",
+        )
+      end
     end
 
     def primary_site_readonly?

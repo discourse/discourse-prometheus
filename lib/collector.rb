@@ -185,6 +185,11 @@ module ::DiscoursePrometheus
         "The highest last_value from the pg_sequences table",
       )
 
+      global_metrics << Gauge.new(
+        "tmp_dir_available_bytes",
+        "Available space in /tmp directory (bytes)",
+      )
+
       @global_metrics = global_metrics
     end
 

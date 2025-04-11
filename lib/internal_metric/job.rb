@@ -2,6 +2,6 @@
 
 module DiscoursePrometheus::InternalMetric
   class Job < Base
-    attribute :job_name, :scheduled, :duration, :count
+    attribute :job_name, :scheduled, :duration, :count, :success
   end
 end

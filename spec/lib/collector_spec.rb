@@ -46,6 +46,34 @@ RSpec.describe DiscoursePrometheus::Collector do
     expect(counter.data).to eq(nil => 3)
   end
 
+  it "handles sidekiq job metrics" do
+    metric_1 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_1.scheduled = false
+    metric_1.job_name = "Bob"
+    metric_1.duration = 1.778
+    metric_1.count = 1
+    metric_1.success = true
+
+    collector.process(metric_1.to_json)
+    metrics = collector.prometheus_metrics
+
+    metric_2 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_2.scheduled = false
+    metric_2.job_name = "Bob"
+    metric_2.duration = 0.5
+    metric_2.count = 1
+    metric_2.success = false
+    collector.process(metric_2.to_json)
+
+    duration = metrics.find { |m| m.name == "sidekiq_job_duration_seconds" }
+    sidekiq_job_count = metrics.find { |m| m.name == "sidekiq_job_count" }
+    sidekiq_job_error_count = metrics.find { |m| m.name == "sidekiq_job_error_count" }
+
+    expect(duration.data).to eq({ job_name: "Bob" } => metric_1.duration + metric_2.duration)
+    expect(sidekiq_job_count.data).to eq({ job_name: "Bob" } => 1)
+    expect(sidekiq_job_error_count.data).to eq({ job_name: "Bob" } => 1)
+  end
+
   it "handles scheduled job metrics" do
     metric = DiscoursePrometheus::InternalMetric::Job.new
 

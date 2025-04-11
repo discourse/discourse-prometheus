@@ -196,12 +196,18 @@ module ::DiscoursePrometheus
     def process_job(metric)
       ensure_job_metrics
       hash = { job_name: metric.job_name }
+
       if metric.scheduled
         @scheduled_job_duration_seconds.observe(metric.duration, hash)
         @scheduled_job_count.observe(metric.count, hash)
       else
         @sidekiq_job_duration_seconds.observe(metric.duration, hash)
-        @sidekiq_job_count.observe(metric.count, hash)
+
+        if metric.success
+          @sidekiq_job_count.observe(metric.count, hash)
+        else
+          @sidekiq_job_error_count.observe(metric.count, hash)
+        end
       end
     end
 
@@ -209,12 +215,18 @@ module ::DiscoursePrometheus
       unless @scheduled_job_count
         @scheduled_job_duration_seconds =
           Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
+
         @scheduled_job_count =
-          Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
+          Counter.new("scheduled_job_count", "Total number of scheduled jobs that succeeded")
+
         @sidekiq_job_duration_seconds =
           Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
+
         @sidekiq_job_count =
-          Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
+          Counter.new("sidekiq_job_count", "Total number of sidekiq jobs that succeeded")
+
+        @sidekiq_job_error_count =
+          Counter.new("sidekiq_job_error_count", "Total number of sidekiq jobs that failed")
       end
     end
 
@@ -403,6 +415,7 @@ module ::DiscoursePrometheus
           @scheduled_job_count,
           @sidekiq_job_duration_seconds,
           @sidekiq_job_count,
+          @sidekiq_job_error_count,
         ]
       else
         []

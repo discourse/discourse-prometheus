@@ -195,7 +195,8 @@ module ::DiscoursePrometheus
 
     def process_job(metric)
       ensure_job_metrics
-      hash = { job_name: metric.job_name }
+      hash = { job_name: metric.job_name, success: metric.success }
+
       if metric.scheduled
         @scheduled_job_duration_seconds.observe(metric.duration, hash)
         @scheduled_job_count.observe(metric.count, hash)
@@ -209,10 +210,13 @@ module ::DiscoursePrometheus
       unless @scheduled_job_count
         @scheduled_job_duration_seconds =
           Counter.new("scheduled_job_duration_seconds", "Total time spent in scheduled jobs")
+
         @scheduled_job_count =
-          Counter.new("scheduled_job_count", "Total number of scheduled jobs executued")
+          Counter.new("scheduled_job_count", "Total number of scheduled jobs executed")
+
         @sidekiq_job_duration_seconds =
           Counter.new("sidekiq_job_duration_seconds", "Total time spent in sidekiq jobs")
+
         @sidekiq_job_count =
           Counter.new("sidekiq_job_count", "Total number of sidekiq jobs executed")
       end

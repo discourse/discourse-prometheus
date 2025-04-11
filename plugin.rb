@@ -65,15 +65,27 @@ after_initialize do
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
     metric.count = 1
+    metric.success = stats.success
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 
-  on(:sidekiq_job_ran) do |worker, msg, queue, duration|
+  on(:sidekiq_job_ran) do |worker, _msg, _queue, duration|
     metric = DiscoursePrometheus::InternalMetric::Job.new
     metric.scheduled = false
     metric.duration = duration
     metric.count = 1
     metric.job_name = worker.class.to_s
+    metric.success = true
+    $prometheus_client.send_json metric.to_h unless Rails.env.test?
+  end
+
+  on(:sidekiq_job_error) do |worker, _msg, _queue, duration|
+    metric = DiscoursePrometheus::InternalMetric::Job.new
+    metric.scheduled = false
+    metric.duration = duration
+    metric.count = 1
+    metric.job_name = worker.class.to_s
+    metric.success = false
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 end

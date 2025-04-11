@@ -7,6 +7,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Base do
     job.scheduled = true
     job.duration = 100.1
     job.count = 1
+    job.success = false
 
     expect(job.to_h).to eq(
       job_name: "bob",
@@ -14,6 +15,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Base do
       duration: 100.1,
       count: 1,
       _type: "Job",
+      success: false,
     )
   end
 

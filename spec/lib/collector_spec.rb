@@ -46,22 +46,78 @@ RSpec.describe DiscoursePrometheus::Collector do
     expect(counter.data).to eq(nil => 3)
   end
 
+  it "handles sidekiq job metrics" do
+    metric_1 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_1.scheduled = false
+    metric_1.job_name = "Bob"
+    metric_1.duration = 1.778
+    metric_1.count = 1
+    metric_1.success = true
+
+    collector.process(metric_1.to_json)
+    metrics = collector.prometheus_metrics
+
+    metric_2 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_2.scheduled = false
+    metric_2.job_name = "Bob"
+    metric_2.duration = 0.5
+    metric_2.count = 1
+    metric_2.success = false
+    collector.process(metric_2.to_json)
+
+    metric_3 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_3.scheduled = false
+    metric_3.job_name = "Bob"
+    metric_3.duration = 1.5
+    metric_3.count = 1
+    metric_3.success = false
+    collector.process(metric_3.to_json)
+
+    duration = metrics.find { |m| m.name == "sidekiq_job_duration_seconds" }
+    sidekiq_job_count = metrics.find { |m| m.name == "sidekiq_job_count" }
+
+    expect(duration.data).to eq(
+      { job_name: "Bob", success: true } => metric_1.duration,
+      { job_name: "Bob", success: false } => metric_2.duration + metric_3.duration,
+    )
+
+    expect(sidekiq_job_count.data).to eq(
+      { job_name: "Bob", success: false } => 2,
+      { job_name: "Bob", success: true } => 1,
+    )
+  end
+
   it "handles scheduled job metrics" do
-    metric = DiscoursePrometheus::InternalMetric::Job.new
+    metric_1 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_1.scheduled = true
+    metric_1.job_name = "Bob"
+    metric_1.duration = 1.778
+    metric_1.success = true
+    metric_1.count = 1
+    collector.process(metric_1.to_json)
 
-    metric.scheduled = true
-    metric.job_name = "Bob"
-    metric.duration = 1.778
-    metric.count = 1
+    metric_2 = DiscoursePrometheus::InternalMetric::Job.new
+    metric_2.scheduled = true
+    metric_2.job_name = "Bob"
+    metric_2.duration = 1.123123
+    metric_2.success = false
+    metric_2.count = 1
+    collector.process(metric_2.to_json)
 
-    collector.process(metric.to_json)
     metrics = collector.prometheus_metrics
 
     duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
     count = metrics.find { |m| m.name == "scheduled_job_count" }
 
-    expect(duration.data).to eq({ job_name: "Bob" } => 1.778)
-    expect(count.data).to eq({ job_name: "Bob" } => 1)
+    expect(duration.data).to eq(
+      { job_name: "Bob", success: true } => metric_1.duration,
+      { job_name: "Bob", success: false } => metric_2.duration,
+    )
+
+    expect(count.data).to eq(
+      { job_name: "Bob", success: true } => 1,
+      { job_name: "Bob", success: false } => 1,
+    )
   end
 
   it "handles job initialization metrics" do
@@ -71,6 +127,7 @@ RSpec.describe DiscoursePrometheus::Collector do
     metric.job_name = "Bob"
     metric.count = 0
     metric.duration = 0
+    metric.success = true
 
     collector.process(metric.to_json)
     metrics = collector.prometheus_metrics
@@ -78,8 +135,8 @@ RSpec.describe DiscoursePrometheus::Collector do
     duration = metrics.find { |m| m.name == "scheduled_job_duration_seconds" }
     count = metrics.find { |m| m.name == "scheduled_job_count" }
 
-    expect(duration.data).to eq({ job_name: "Bob" } => 0)
-    expect(count.data).to eq({ job_name: "Bob" } => 0)
+    expect(duration.data).to eq({ job_name: "Bob", success: true } => 0)
+    expect(count.data).to eq({ job_name: "Bob", success: true } => 0)
   end
 
   it "handles process metrics" do

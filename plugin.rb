@@ -65,7 +65,7 @@ after_initialize do
     metric.job_name = stat.name
     metric.duration = stat.duration_ms * 0.001
     metric.count = 1
-    metric.success = stats.success
+    metric.success = stat.success
     $prometheus_client.send_json metric.to_h unless Rails.env.test?
   end
 

@@ -22,8 +22,9 @@ module DiscoursePrometheus::InternalMetric
       gc_major_by: "Reason the last major GC was triggered",
       major_gc_count: "Major GC operations by process",
       minor_gc_count: "Minor GC operations by process",
-      total_allocated_objects: "Total number of allocateds objects by process",
+      total_allocated_objects: "Total number of allocated objects by process",
       job_failures: "Number of scheduled and regular jobs that failed in a process",
+      process_cpu_seconds_total: "Total CPU time used by the process",
     }
 
     attribute :type,
@@ -45,7 +46,8 @@ module DiscoursePrometheus::InternalMetric
               :active_record_connections_count,
               :active_record_failover_count,
               :redis_failover_count,
-              :job_failures
+              :job_failures,
+              :process_cpu_seconds_total
 
     def initialize
       @active_record_connections_count = {}

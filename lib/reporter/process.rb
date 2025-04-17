@@ -56,6 +56,10 @@ module DiscoursePrometheus::Reporter
       end
     end
 
+    def process_cpu_seconds_total
+      ::Process.clock_gettime(::Process::CLOCK_PROCESS_CPUTIME_ID)
+    end
+
     def collect_scheduler_stats(metric)
       metric.deferred_jobs_queued = Scheduler::Defer.length
 
@@ -80,6 +84,7 @@ module DiscoursePrometheus::Reporter
       metric.pid = pid
       metric.rss = rss
       metric.thread_count = Thread.list.count
+      metric.process_cpu_seconds_total = process_cpu_seconds_total
     end
 
     def collect_gc_stats(metric)

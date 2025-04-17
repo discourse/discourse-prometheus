@@ -23,6 +23,7 @@ module DiscoursePrometheus::InternalMetric
               :sidekiq_paused,
               :sidekiq_workers,
               :sidekiq_jobs_stuck,
+              :sidekiq_queue_latency_seconds,
               :scheduled_jobs_stuck,
               :missing_s3_uploads,
               :version_info,
@@ -131,6 +132,13 @@ module DiscoursePrometheus::InternalMetric
             stats[{ queue: queue_name }] = queue_count
           end
 
+          stats
+        end
+
+      @sidekiq_queue_latency_seconds =
+        begin
+          stats = {}
+          Sidekiq::Queue.all.each { |queue| stats[{ queue: queue.name }] = queue.latency }
           stats
         end
 

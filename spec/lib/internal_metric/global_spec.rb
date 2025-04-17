@@ -88,6 +88,18 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     end
   end
 
+  describe "#sidekiq_queue_latency_seconds" do
+    it "collects the right metrics" do
+      fake_queue = Sidekiq::Queue.new("default")
+
+      Sidekiq::Queue.expects(:all).returns([fake_queue])
+
+      metric.collect
+
+      expect(metric.sidekiq_queue_latency_seconds).to eq({ queue: "default" } => 0)
+    end
+  end
+
   describe "when a replica has been configured" do
     before do
       config = ActiveRecord::Base.connection_db_config.configuration_hash.dup

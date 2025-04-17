@@ -159,6 +159,11 @@ module ::DiscoursePrometheus
       global_metrics << Gauge.new("sidekiq_workers", "Total number of active sidekiq workers")
 
       global_metrics << Gauge.new(
+        "sidekiq_queue_latency_seconds",
+        "Latency in seconds for each Sidekiq queue",
+      )
+
+      global_metrics << Gauge.new(
         "sidekiq_jobs_stuck",
         "Number of sidekiq jobs which have been running for more than #{InternalMetric::Global::STUCK_SIDEKIQ_JOB_MINUTES} minutes",
       )

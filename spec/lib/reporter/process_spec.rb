@@ -22,6 +22,7 @@ RSpec.describe DiscoursePrometheus::Reporter::Process do
     expect(metric.v8_physical_size).to be > 0
     expect(metric.pid).to be > 0
     expect(metric.thread_count).to be > 0
+    expect(metric.process_cpu_seconds_total).to be > 0
 
     # macos does not support these metrics
     expect(metric.rss).to be > 0 unless RbConfig::CONFIG["arch"] =~ /darwin/

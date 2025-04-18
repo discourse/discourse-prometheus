@@ -345,9 +345,11 @@ RSpec.describe DiscoursePrometheus::Collector do
     exported = collector.prometheus_metrics
 
     assert_metric = ->(metric_name, sum) do
-      metrics = exported.find { |metric| metric.name == metric_name }
+      metric = exported.find { |m| m.name == metric_name }
 
-      expect(metrics.to_h).to eq(
+      expect(metric.type).to eq("histogram")
+
+      expect(metric.to_h).to eq(
         {
           controller: "list",
           action: "latest",

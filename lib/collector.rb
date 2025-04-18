@@ -7,7 +7,7 @@ module ::DiscoursePrometheus
     # convenience shortcuts
     Gauge = ::PrometheusExporter::Metric::Gauge
     Counter = ::PrometheusExporter::Metric::Counter
-    Summary = ::PrometheusExporter::Metric::Summary
+    Histogram = ::PrometheusExporter::Metric::Histogram
 
     def initialize
       @page_views = nil
@@ -237,6 +237,8 @@ module ::DiscoursePrometheus
       @process_metrics << metric
     end
 
+    HTTP_DURATION_HISTOGRAM_BUCKETS = [0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 15, 30]
+
     def ensure_web_metrics
       unless @page_views
         @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
@@ -248,36 +250,52 @@ module ::DiscoursePrometheus
           )
 
         @http_duration_seconds =
-          Summary.new("http_duration_seconds", "Time spent in HTTP reqs in seconds")
+          Histogram.new(
+            "http_duration_seconds",
+            "Time spent in HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
 
         @http_application_duration_seconds =
-          Summary.new(
+          Histogram.new(
             "http_application_duration_seconds",
             "Time spent in application code within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
           )
 
         @http_redis_duration_seconds =
-          Summary.new(
+          Histogram.new(
             "http_redis_duration_seconds",
             "Time spent in Redis within HTTP reqs redis seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
           )
 
         @http_sql_duration_seconds =
-          Summary.new("http_sql_duration_seconds", "Time spent in SQL within HTTP reqs in seconds")
+          Histogram.new(
+            "http_sql_duration_seconds",
+            "Time spent in SQL within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
 
         @http_net_duration_seconds =
-          Summary.new("http_net_duration_seconds", "Time spent in external network requests")
+          Histogram.new(
+            "http_net_duration_seconds",
+            "Time spent in external network requests",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
 
         @http_queue_duration_seconds =
-          Summary.new(
+          Histogram.new(
             "http_queue_duration_seconds",
             "Time spent queueing requests between NGINX and Ruby",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
           )
 
         @http_gc_duration_seconds =
-          Summary.new(
+          Histogram.new(
             "http_gc_duration_seconds",
             "Time spent in garbage collection within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
           )
 
         @http_gc_major_count =
@@ -305,8 +323,6 @@ module ::DiscoursePrometheus
 
     def process_web(metric)
       ensure_web_metrics
-      # STDERR.puts metric.to_h.inspect
-      # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
       labels = {
         cache: !!metric.cache,

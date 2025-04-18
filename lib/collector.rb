@@ -8,6 +8,7 @@ module ::DiscoursePrometheus
     Gauge = ::PrometheusExporter::Metric::Gauge
     Counter = ::PrometheusExporter::Metric::Counter
     Summary = ::PrometheusExporter::Metric::Summary
+    Histogram = ::PrometheusExporter::Metric::Histogram
 
     def initialize
       @page_views = nil
@@ -19,6 +20,15 @@ module ::DiscoursePrometheus
       @http_net_duration_seconds = nil
       @http_queue_duration_seconds = nil
       @http_gc_duration_seconds = nil
+
+      @http_requests_duration_seconds = nil
+      @http_requests_application_duration_seconds = nil
+      @http_requests_redis_duration_seconds = nil
+      @http_requests_sql_duration_seconds = nil
+      @http_requests_net_duration_seconds = nil
+      @http_requests_queue_duration_seconds = nil
+      @http_requests_gc_duration_seconds = nil
+
       @http_gc_major_count = nil
       @http_gc_minor_count = nil
       @http_forced_anon_count = nil
@@ -237,6 +247,8 @@ module ::DiscoursePrometheus
       @process_metrics << metric
     end
 
+    HTTP_DURATION_HISTOGRAM_BUCKETS = [0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 15, 30]
+
     def ensure_web_metrics
       unless @page_views
         @page_views = Counter.new("page_views", "Page views reported by admin dashboard")
@@ -245,6 +257,54 @@ module ::DiscoursePrometheus
           Counter.new(
             "http_forced_anon_count",
             "Total count of logged in requests forced into anonymous mode",
+          )
+
+        @http_requests_duration_seconds =
+          Histogram.new(
+            "http_requests_duration_seconds",
+            "Time spent in HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+
+        @http_requests_application_duration_seconds =
+          Histogram.new(
+            "http_requests_application_duration_seconds",
+            "Time spent in application code within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+
+        @http_requests_redis_duration_seconds =
+          Histogram.new(
+            "http_requests_redis_duration_seconds",
+            "Time spent in Redis within HTTP reqs redis seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+
+        @http_requests_sql_duration_seconds =
+          Histogram.new(
+            "http_requests_sql_duration_seconds",
+            "Time spent in SQL within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+        @http_requests_net_duration_seconds =
+          Histogram.new(
+            "http_requests_net_duration_seconds",
+            "Time spent in external network requests within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+
+        @http_requests_queue_duration_seconds =
+          Histogram.new(
+            "http_requests_queue_duration_seconds",
+            "Time spent queueing requests between NGINX and Ruby in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+          )
+
+        @http_requests_gc_duration_seconds =
+          Histogram.new(
+            "http_requests_gc_duration_seconds",
+            "Time spent in garbage collection within HTTP reqs in seconds",
+            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
           )
 
         @http_duration_seconds =
@@ -266,12 +326,15 @@ module ::DiscoursePrometheus
           Summary.new("http_sql_duration_seconds", "Time spent in SQL within HTTP reqs in seconds")
 
         @http_net_duration_seconds =
-          Summary.new("http_net_duration_seconds", "Time spent in external network requests")
+          Summary.new(
+            "http_net_duration_seconds",
+            "Time spent in external network requests within HTTP reqs in seconds",
+          )
 
         @http_queue_duration_seconds =
           Summary.new(
             "http_queue_duration_seconds",
-            "Time spent queueing requests between NGINX and Ruby",
+            "Time spent queueing requests between NGINX and Ruby in seconds",
           )
 
         @http_gc_duration_seconds =
@@ -305,8 +368,6 @@ module ::DiscoursePrometheus
 
     def process_web(metric)
       ensure_web_metrics
-      # STDERR.puts metric.to_h.inspect
-      # STDERR.puts metric.controller.to_s + " " + metric.action.to_s
 
       labels = {
         cache: !!metric.cache,
@@ -326,6 +387,7 @@ module ::DiscoursePrometheus
       duration = metric.duration
 
       @http_duration_seconds.observe(duration, labels)
+      @http_requests_duration_seconds.observe(duration, labels)
 
       if duration
         application_duration = duration.dup
@@ -334,15 +396,28 @@ module ::DiscoursePrometheus
         application_duration -= metric.net_duration if metric.net_duration
         application_duration -= metric.gc_duration if metric.gc_duration
         @http_application_duration_seconds.observe(application_duration, labels)
+        @http_requests_application_duration_seconds.observe(application_duration, labels)
       end
 
       @http_sql_duration_seconds.observe(metric.sql_duration, labels)
+      @http_requests_sql_duration_seconds.observe(metric.sql_duration, labels)
+
       @http_redis_duration_seconds.observe(metric.redis_duration, labels)
+      @http_requests_redis_duration_seconds.observe(metric.redis_duration, labels)
+
       @http_net_duration_seconds.observe(metric.net_duration, labels)
+      @http_requests_net_duration_seconds.observe(metric.net_duration, labels)
+
       @http_queue_duration_seconds.observe(metric.queue_duration, labels)
+      @http_requests_queue_duration_seconds.observe(metric.queue_duration, labels)
+
       @http_sql_calls_per_request.observe(metric.sql_calls, labels)
 
-      @http_gc_duration_seconds.observe(metric.gc_duration, labels) if metric.gc_duration
+      if metric.gc_duration
+        @http_gc_duration_seconds.observe(metric.gc_duration, labels)
+        @http_requests_gc_duration_seconds.observe(metric.gc_duration, labels)
+      end
+
       @http_gc_major_count.observe(metric.gc_major_count, labels) if metric.gc_major_count
       @http_gc_minor_count.observe(metric.gc_minor_count, labels) if metric.gc_minor_count
 
@@ -452,6 +527,13 @@ module ::DiscoursePrometheus
         [
           @page_views,
           @http_requests,
+          @http_requests_duration_seconds,
+          @http_requests_application_duration_seconds,
+          @http_requests_redis_duration_seconds,
+          @http_requests_sql_duration_seconds,
+          @http_requests_net_duration_seconds,
+          @http_requests_queue_duration_seconds,
+          @http_requests_gc_duration_seconds,
           @http_duration_seconds,
           @http_application_duration_seconds,
           @http_redis_duration_seconds,

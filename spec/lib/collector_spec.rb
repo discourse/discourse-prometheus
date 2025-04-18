@@ -344,10 +344,12 @@ RSpec.describe DiscoursePrometheus::Collector do
 
     exported = collector.prometheus_metrics
 
-    assert_metric = ->(metric_name, sum) do
-      metrics = exported.find { |metric| metric.name == metric_name }
+    assert_metric = ->(metric_name, sum, metric_type) do
+      metric = exported.find { |m| m.name == metric_name }
 
-      expect(metrics.to_h).to eq(
+      expect(metric.type).to eq(metric_type)
+
+      expect(metric.to_h).to eq(
         {
           controller: "list",
           action: "latest",
@@ -374,13 +376,19 @@ RSpec.describe DiscoursePrometheus::Collector do
     end
 
     [
-      ["http_duration_seconds", 14.0],
-      ["http_application_duration_seconds", 4.0],
-      ["http_sql_duration_seconds", 1.0],
-      ["http_redis_duration_seconds", 2.0],
-      ["http_net_duration_seconds", 3.0],
-      ["http_gc_duration_seconds", 4.0],
-    ].each { |metric_name, sum| assert_metric.call(metric_name, sum) }
+      ["http_duration_seconds", 14.0, "summary"],
+      ["http_application_duration_seconds", 4.0, "summary"],
+      ["http_sql_duration_seconds", 1.0, "summary"],
+      ["http_redis_duration_seconds", 2.0, "summary"],
+      ["http_net_duration_seconds", 3.0, "summary"],
+      ["http_gc_duration_seconds", 4.0, "summary"],
+      ["http_requests_duration_seconds", 14.0, "histogram"],
+      ["http_requests_application_duration_seconds", 4.0, "histogram"],
+      ["http_requests_sql_duration_seconds", 1.0, "histogram"],
+      ["http_requests_redis_duration_seconds", 2.0, "histogram"],
+      ["http_requests_net_duration_seconds", 3.0, "histogram"],
+      ["http_requests_gc_duration_seconds", 4.0, "histogram"],
+    ].each { |args| assert_metric.call(*args) }
 
     expect(exported.find { |metric| metric.name == "http_gc_major_count" }.to_h).to eq(
       {

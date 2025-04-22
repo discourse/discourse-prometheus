@@ -408,8 +408,8 @@ module ::DiscoursePrometheus
       @http_net_duration_seconds.observe(metric.net_duration, labels)
       @http_requests_net_duration_seconds.observe(metric.net_duration, labels)
 
-      @http_queue_duration_seconds.observe(metric.queue_duration, labels)
-      @http_requests_queue_duration_seconds.observe(metric.queue_duration, labels)
+      @http_queue_duration_seconds.observe(metric.queue_duration)
+      @http_requests_queue_duration_seconds.observe(metric.queue_duration)
 
       @http_sql_calls_per_request.observe(metric.sql_calls, labels)
 

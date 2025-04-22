@@ -337,7 +337,6 @@ RSpec.describe DiscoursePrometheus::Collector do
       queue_duration: 7,
       controller: "list",
       action: "latest",
-      cache: true,
       logged_in: false,
       html: true,
     )
@@ -356,7 +355,6 @@ RSpec.describe DiscoursePrometheus::Collector do
           controller: "list",
           action: "latest",
           success: true,
-          cache: false,
           logged_in: true,
           content_type: "json",
         } => {
@@ -367,7 +365,6 @@ RSpec.describe DiscoursePrometheus::Collector do
           controller: "list",
           action: "latest",
           success: false,
-          cache: true,
           logged_in: false,
           content_type: "html",
         } => {
@@ -401,7 +398,6 @@ RSpec.describe DiscoursePrometheus::Collector do
         controller: "list",
         action: "latest",
         success: true,
-        cache: false,
         logged_in: true,
         content_type: "json",
       } =>
@@ -410,7 +406,6 @@ RSpec.describe DiscoursePrometheus::Collector do
         controller: "list",
         action: "latest",
         success: false,
-        cache: true,
         logged_in: false,
         content_type: "html",
       } =>
@@ -422,7 +417,6 @@ RSpec.describe DiscoursePrometheus::Collector do
         controller: "list",
         action: "latest",
         success: true,
-        cache: false,
         logged_in: true,
         content_type: "json",
       } =>
@@ -431,7 +425,6 @@ RSpec.describe DiscoursePrometheus::Collector do
         controller: "list",
         action: "latest",
         success: false,
-        cache: true,
         logged_in: false,
         content_type: "html",
       } =>

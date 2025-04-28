@@ -297,7 +297,7 @@ module ::DiscoursePrometheus
           Histogram.new(
             "http_requests_queue_duration_seconds",
             "Time spent queueing requests between NGINX and Ruby in seconds",
-            buckets: HTTP_DURATION_HISTOGRAM_BUCKETS,
+            buckets: [0.002, 0.004, 0.008, 0.01, 0.02, 0.05, 0.1],
           )
 
         @http_requests_gc_duration_seconds =

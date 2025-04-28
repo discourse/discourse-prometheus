@@ -318,6 +318,7 @@ RSpec.describe DiscoursePrometheus::Collector do
       gc_duration: 4,
       gc_major_count: 5,
       gc_minor_count: 6,
+      queue_duration: 7,
       json: true,
       controller: "list",
       action: "latest",
@@ -333,6 +334,7 @@ RSpec.describe DiscoursePrometheus::Collector do
       gc_duration: 4,
       gc_major_count: 5,
       gc_minor_count: 6,
+      queue_duration: 7,
       controller: "list",
       action: "latest",
       cache: true,
@@ -389,6 +391,10 @@ RSpec.describe DiscoursePrometheus::Collector do
       ["http_requests_net_duration_seconds", 3.0, "histogram"],
       ["http_requests_gc_duration_seconds", 4.0, "histogram"],
     ].each { |args| assert_metric.call(*args) }
+
+    expect(
+      exported.find { |metric| metric.name == "http_requests_queue_duration_seconds" }.to_h,
+    ).to eq({} => { "count" => 2, "sum" => 14.0 })
 
     expect(exported.find { |metric| metric.name == "http_gc_major_count" }.to_h).to eq(
       {

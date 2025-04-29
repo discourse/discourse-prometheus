@@ -370,7 +370,6 @@ module ::DiscoursePrometheus
       ensure_web_metrics
 
       labels = {
-        cache: !!metric.cache,
         success: (200..299).include?(metric.status_code),
         content_type: web_metric_content_type(metric),
         logged_in: metric.logged_in,

@@ -101,7 +101,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
   end
 
   describe "#find_stuck_sidekiq_jobs" do
-    it "collects the right metrics" do
+    before do
       allow(Sidekiq::Workers).to receive(:new).and_return(
         [
           [
@@ -127,7 +127,9 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
           ],
         ],
       )
+    end
 
+    it "collects the right metrics" do
       metric.collect
 
       expect(metric.sidekiq_jobs_stuck).to eq({ { job_name: "Jobs::Foo" } => 1 })

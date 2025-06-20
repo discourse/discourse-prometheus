@@ -100,6 +100,40 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     end
   end
 
+  describe "#find_stuck_sidekiq_jobs" do
+    it "collects the right metrics" do
+      allow(Sidekiq::Workers).to receive(:new).and_return(
+        [
+          [
+            "#{::PrometheusExporter.hostname}:25417:c2801d1a17b5",
+            "5hhh",
+            Sidekiq::Work.new(
+              "#{::PrometheusExporter.hostname}:25417:c2801d1a17b5",
+              "5hhh",
+              {
+                "queue" => "default",
+                "payload" => {
+                  "retry" => true,
+                  "queue" => "default",
+                  "class" => "Jobs::Foo",
+                  "args" => [{ "current_site_id" => "default" }],
+                  "jid" => "294d7a9766a1c2ef237c1452",
+                  "created_at" => 1234567890.123456,
+                  "enqueued_at" => 1234567890.123456,
+                }.to_json,
+                "run_at" => 1_234_567_890,
+              },
+            ),
+          ],
+        ],
+      )
+
+      metric.collect
+
+      expect(metric.sidekiq_jobs_stuck).to eq({ { job_name: "Jobs::Foo" } => 1 })
+    end
+  end
+
   describe "when a replica has been configured" do
     before do
       config = ActiveRecord::Base.connection_db_config.configuration_hash.dup

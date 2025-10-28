@@ -10,6 +10,9 @@ module ::DiscoursePrometheus
     Summary = ::PrometheusExporter::Metric::Summary
     Histogram = ::PrometheusExporter::Metric::Histogram
 
+    class UnknownMetricTypeError < StandardError
+    end
+
     def initialize
       @page_views = nil
       @http_requests = nil
@@ -47,6 +50,9 @@ module ::DiscoursePrometheus
     end
 
     def process(str)
+      obj = nil
+      metric = nil
+
       obj = Oj.load(str, mode: :object)
       metric = DiscoursePrometheus::InternalMetric::Base.from_h(obj)
 
@@ -61,6 +67,21 @@ module ::DiscoursePrometheus
       elsif InternalMetric::Custom === metric
         process_custom(metric)
       end
+    rescue => e
+      metric_name =
+        if metric && metric.respond_to?(:name)
+          metric.name
+        elsif obj
+          obj["name"] || obj[:name]
+        end
+
+      STDERR.puts(
+        "#{Time.now}: Prometheus collector failed to process metric #{metric_name || "unknown"} " \
+          "(#{e.class}): #{e.message}",
+      )
+      STDERR.puts(e.backtrace.join("\n")) if e.backtrace
+
+      raise
     end
 
     def prometheus_metrics_text
@@ -69,22 +90,32 @@ module ::DiscoursePrometheus
 
     def process_custom(metric)
       obj = ensure_custom_metric(metric)
-      if Counter === obj
-        obj.observe(metric.value || 1, metric.labels)
-      elsif Gauge === obj
-        obj.observe(metric.value, metric.labels)
+      value = metric.value
+
+      case obj
+      when Counter
+        obj.observe(value || 1, metric.labels)
+      when Gauge
+        obj.observe(value, metric.labels) if !value.nil?
+      when Summary, Histogram
+        obj.observe(value, metric.labels || {}) if !value.nil?
       end
     end
 
     def ensure_custom_metric(metric)
       @custom_metrics ||= {}
       if !(obj = @custom_metrics[metric.name])
-        if metric.type == "Counter"
+        case metric.type.to_s.downcase
+        when "counter"
           obj = Counter.new(metric.name, metric.description)
-        elsif metric.type == "Gauge"
+        when "gauge"
           obj = Gauge.new(metric.name, metric.description)
+        when "summary"
+          obj = Summary.new(metric.name, metric.description)
+        when "histogram"
+          obj = Histogram.new(metric.name, metric.description)
         else
-          raise ApplicationError, "Unknown metric type #{metric.type}"
+          raise UnknownMetricTypeError, "Unknown metric type #{metric.type}"
         end
         @custom_metrics[metric.name] = obj
       end

@@ -46,6 +46,81 @@ RSpec.describe DiscoursePrometheus::Collector do
     expect(counter.data).to eq(nil => 3)
   end
 
+  it "processes custom summary and histogram metrics" do
+    collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "summary_metric",
+          "description": "summary description",
+          "labels": { "feature": "foo" },
+          "value": 1.5,
+          "type": "Summary"
+        }
+      METRIC
+
+    collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "summary_metric",
+          "description": "summary description",
+          "labels": { "feature": "foo" },
+          "value": 2.5,
+          "type": "Summary"
+        }
+      METRIC
+
+    collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "histogram_metric",
+          "description": "histogram description",
+          "labels": { "feature": "foo" },
+          "value": 0.5,
+          "type": "Histogram"
+        }
+      METRIC
+
+    collector.process(<<~METRIC)
+        {
+          "_type": "Custom",
+          "name": "histogram_metric",
+          "description": "histogram description",
+          "labels": { "feature": "foo" },
+          "value": 1.5,
+          "type": "Histogram"
+        }
+      METRIC
+
+    metrics = collector.prometheus_metrics
+
+    summary = metrics.find { |m| m.name == "summary_metric" }
+    histogram = metrics.find { |m| m.name == "histogram_metric" }
+
+    expect(summary.type).to eq("summary")
+    expect(summary.to_h).to eq({ { "feature" => "foo" } => { "count" => 2, "sum" => 4.0 } })
+
+    expect(histogram.type).to eq("histogram")
+    expect(histogram.to_h).to eq({ { "feature" => "foo" } => { "count" => 2, "sum" => 2.0 } })
+  end
+
+  it "logs failures when metric processing raises" do
+    expect do
+      expect do collector.process(<<~METRIC) end.to output(
+            {
+              "_type": "Custom",
+              "name": "mystery_metric",
+              "description": "broken metric",
+              "type": "Mystery"
+            }
+          METRIC
+        /Prometheus collector failed to process metric mystery_metric/,
+      ).to_stderr
+    end.to raise_error(
+      DiscoursePrometheus::Collector::UnknownMetricTypeError,
+      "Unknown metric type Mystery",
+    )
+  end
+
   it "handles sidekiq job metrics" do
     metric_1 = DiscoursePrometheus::InternalMetric::Job.new
     metric_1.scheduled = false

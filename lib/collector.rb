@@ -278,7 +278,7 @@ module ::DiscoursePrometheus
       @process_metrics << metric
     end
 
-    HTTP_DURATION_HISTOGRAM_BUCKETS = [0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 15, 30]
+    HTTP_DURATION_HISTOGRAM_BUCKETS = [0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 2, 4, 8, 16, 30]
 
     def ensure_web_metrics
       unless @page_views

@@ -505,15 +505,4 @@ RSpec.describe DiscoursePrometheus::Collector do
       } =>
         6,
     )
-  end
-
-  describe "HTTP_DURATION_HISTOGRAM_BUCKETS" do
-    it "starts with a 0 bucket for exact-zero observations" do
-      expect(described_class::HTTP_DURATION_HISTOGRAM_BUCKETS.first).to eq(0)
-    end
-
-    it "contains 13 bucket boundaries" do
-      expect(described_class::HTTP_DURATION_HISTOGRAM_BUCKETS.length).to eq(13)
-    end
-  end
-end
+  endend

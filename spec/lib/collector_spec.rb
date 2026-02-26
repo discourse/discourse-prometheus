@@ -505,4 +505,5 @@ RSpec.describe DiscoursePrometheus::Collector do
       } =>
         6,
     )
-  endend
+  end
+end

@@ -60,7 +60,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
       end
 
       context "when `s3_inventory_bucket` has not been set for the site" do
-        before { SiteSetting.s3_inventory_bucket = nil }
+        before { SiteSetting.s3_inventory_bucket = "" }
 
         it "does not expose the metric" do
           Discourse.stats.set("missing_s3_uploads", 2)

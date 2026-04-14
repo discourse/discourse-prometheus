@@ -75,11 +75,11 @@ module ::DiscoursePrometheus
           obj["name"] || obj[:name]
         end
 
-      STDERR.puts(
+      warn(
         "#{Time.now}: Prometheus collector failed to process metric #{metric_name || "unknown"} " \
           "(#{e.class}): #{e.message}",
       )
-      STDERR.puts(e.backtrace.join("\n")) if e.backtrace
+      warn(e.backtrace.join("\n")) if e.backtrace
 
       raise
     end

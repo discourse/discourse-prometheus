@@ -13,7 +13,7 @@ module DiscoursePrometheus::Reporter
             client.send_json metric
           rescue => e
             Rails.logger.warn(
-              "Prometheus Discourse Failed To Collect Process Stats #{e.class} #{e}\n#{e.backtrace.join("\n")}",
+              "Prometheus Discourse Failed To Collect Process Stats #{e.class} #{e}\n#{e.backtrace.join("\n")}"
             )
           ensure
             sleep frequency
@@ -109,7 +109,14 @@ module DiscoursePrometheus::Reporter
       metric.v8_used_heap_size = 0
 
       ObjectSpace.each_object(MiniRacer::Context) do |context|
-        stats = context.heap_stats
+        stats =
+          begin
+            context.heap_stats
+          rescue MiniRacer::ContextDisposedError
+            # context was disposed but not GC'd yet
+            next
+          end
+
         if stats
           metric.v8_heap_count += 1
           metric.v8_heap_size += stats[:total_heap_size].to_i
@@ -120,7 +127,9 @@ module DiscoursePrometheus::Reporter
     end
 
     def collect_active_record_connections_stat(metric)
-      ObjectSpace.each_object(ActiveRecord::ConnectionAdapters::ConnectionPool) do |pool|
+      ObjectSpace.each_object(
+        ActiveRecord::ConnectionAdapters::ConnectionPool
+      ) do |pool|
         if !pool.connections.nil?
           stat = pool.stat
 
@@ -135,14 +144,19 @@ module DiscoursePrometheus::Reporter
 
     def collect_failover_stats(metric)
       if defined?(RailsFailover::ActiveRecord) &&
-           RailsFailover::ActiveRecord::Handler.instance.respond_to?(:primaries_down_count)
+           RailsFailover::ActiveRecord::Handler.instance.respond_to?(
+             :primaries_down_count
+           )
         metric.active_record_failover_count =
           RailsFailover::ActiveRecord::Handler.instance.primaries_down_count
       end
 
       if defined?(RailsFailover::Redis) &&
-           RailsFailover::Redis::Handler.instance.respond_to?(:primaries_down_count)
-        metric.redis_failover_count = RailsFailover::Redis::Handler.instance.primaries_down_count
+           RailsFailover::Redis::Handler.instance.respond_to?(
+             :primaries_down_count
+           )
+        metric.redis_failover_count =
+          RailsFailover::Redis::Handler.instance.primaries_down_count
       end
     end
   end

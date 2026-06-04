@@ -109,7 +109,14 @@ module DiscoursePrometheus::Reporter
       metric.v8_used_heap_size = 0
 
       ObjectSpace.each_object(MiniRacer::Context) do |context|
-        stats = context.heap_stats
+        stats =
+          begin
+            context.heap_stats
+          rescue MiniRacer::ContextDisposedError
+            # context was disposed but not GC'd yet
+            next
+          end
+
         if stats
           metric.v8_heap_count += 1
           metric.v8_heap_size += stats[:total_heap_size].to_i

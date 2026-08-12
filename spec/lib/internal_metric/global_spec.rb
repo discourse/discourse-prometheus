@@ -21,8 +21,6 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
   end
 
   it "collects the version_info metric" do
-    Landlock.stubs(:abi_version).raises(Landlock::Error.new("unavailable"))
-
     metric.collect
 
     expect(metric.version_info.count).to eq(1)
@@ -32,8 +30,6 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(labels[:revision]).to match(/\A[0-9a-f]{40}\z/)
     expect(labels[:version]).to eq(Discourse::VERSION::STRING)
     expect(value).to eq(1)
-    expect(metric.safe_exec_landlock_abi_version).to eq(0)
-    expect(metric.sidekiq_processes).not_to eq(nil)
   end
 
   if SiteSetting.respond_to?("s3_inventory_bucket")

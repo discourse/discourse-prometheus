@@ -17,7 +17,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(metric.redis_primary_available).to eq({ { type: "main" } => 1 })
     expect(metric.redis_replica_available).to eq({ { type: "main" } => 0 })
     expect(metric.tmp_dir_available_bytes).to be > 0
-    expect(metric.safe_exec_landlock_abi_version).to eq(6)
+    expect(metric.landlock_abi_version).to eq(6)
   end
 
   it "collects the version_info metric" do

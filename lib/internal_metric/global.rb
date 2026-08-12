@@ -30,7 +30,7 @@ module DiscoursePrometheus::InternalMetric
               :readonly_sites,
               :postgres_highest_sequence,
               :tmp_dir_available_bytes,
-              :safe_exec_landlock_abi_version
+              :landlock_abi_version
 
     def initialize
       @active_app_reqs = 0
@@ -62,12 +62,7 @@ module DiscoursePrometheus::InternalMetric
 
     def collect
       @version_info ||= { { revision: @@version, version: Discourse::VERSION::STRING } => 1 }
-      @safe_exec_landlock_abi_version =
-        begin
-          Landlock.abi_version
-        rescue Landlock::Error
-          0
-        end
+      @landlock_abi_version = memoized_landlock_abi_version
 
       redis_primary_running = {}
       redis_replica_running = {}
@@ -181,9 +176,22 @@ module DiscoursePrometheus::InternalMetric
     # For testing purposes
     def reset!
       @@missing_uploads = nil
+      @@landlock_abi_version = nil
     end
 
     private
+
+    def memoized_landlock_abi_version
+      @@landlock_abi_version ||=
+        begin
+          require "landlock"
+          Landlock.abi_version
+        rescue LoadError
+          0
+        rescue Landlock::Error
+          0
+        end
+    end
 
     def collect_readonly_sites
       dbs = RailsMultisite::ConnectionManagement.all_dbs

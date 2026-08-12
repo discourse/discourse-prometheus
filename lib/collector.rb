@@ -237,7 +237,7 @@ module ::DiscoursePrometheus
       )
 
       global_metrics << Gauge.new(
-        "safe_exec_landlock_abi_version",
+        "landlock_abi_version",
         "Landlock ABI version, or 0 when unavailable",
       )
 

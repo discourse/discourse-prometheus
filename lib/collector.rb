@@ -236,6 +236,11 @@ module ::DiscoursePrometheus
         "Available space in /tmp directory (bytes)",
       )
 
+      global_metrics << Gauge.new(
+        "landlock_abi_version",
+        "Landlock ABI version, or 0 when unavailable",
+      )
+
       @global_metrics = global_metrics
     end
 

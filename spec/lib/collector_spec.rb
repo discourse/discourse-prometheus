@@ -53,9 +53,10 @@ RSpec.describe DiscoursePrometheus::Collector do
     expect(gauge.data).to eq({ "test" => "super" } => 122.1)
     expect(counter.data).to eq(nil => 3)
     expect(landlock_abi_version.data).to eq({} => 6)
-    expect(collector.prometheus_metrics_text).to include(
-      "discourse_safe_exec_landlock_abi_version 6\n",
-    )
+    metrics_text = collector.prometheus_metrics_text
+    landlock_samples = metrics_text.lines.grep(/^discourse_safe_exec_landlock_abi_version/)
+    expect(metrics_text).to include("# TYPE discourse_safe_exec_landlock_abi_version gauge")
+    expect(landlock_samples).to eq(["discourse_safe_exec_landlock_abi_version 6\n"])
   ensure
     PrometheusExporter::Metric::Base.default_prefix = previous_prefix
   end

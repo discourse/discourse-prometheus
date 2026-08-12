@@ -7,6 +7,8 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
   after { metric.reset! }
 
   it "collects global metrics" do
+    Landlock.stubs(:abi_version).returns(6)
+
     metric.collect
 
     expect(metric.sidekiq_processes).not_to eq(nil)
@@ -15,9 +17,12 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(metric.redis_primary_available).to eq({ { type: "main" } => 1 })
     expect(metric.redis_replica_available).to eq({ { type: "main" } => 0 })
     expect(metric.tmp_dir_available_bytes).to be > 0
+    expect(metric.safe_exec_landlock_abi_version).to eq(6)
   end
 
   it "collects the version_info metric" do
+    Landlock.stubs(:abi_version).raises(Landlock::Error.new("unavailable"))
+
     metric.collect
 
     expect(metric.version_info.count).to eq(1)
@@ -27,25 +32,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(labels[:revision]).to match(/\A[0-9a-f]{40}\z/)
     expect(labels[:version]).to eq(Discourse::VERSION::STRING)
     expect(value).to eq(1)
-  end
-
-  describe "#collect" do
-    it "collects the Landlock ABI version" do
-      Landlock.stubs(:abi_version).returns(6)
-
-      metric.collect
-
-      expect(metric.safe_exec_landlock_abi_version).to eq(6)
-    end
-
-    it "keeps collecting global metrics when the Landlock ABI is unavailable" do
-      Landlock.stubs(:abi_version).returns(0)
-
-      metric.collect
-
-      expect(metric.safe_exec_landlock_abi_version).to eq(0)
-      expect(metric.sidekiq_processes).not_to eq(nil)
-    end
+    expect(metric.safe_exec_landlock_abi_version).to eq(0)
   end
 
   if SiteSetting.respond_to?("s3_inventory_bucket")

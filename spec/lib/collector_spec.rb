@@ -6,25 +6,6 @@ require_relative "../../lib/collector"
 RSpec.describe DiscoursePrometheus::Collector do
   subject(:collector) { described_class.new }
 
-  describe "#prometheus_metrics_text" do
-    it "renders the prefixed Landlock ABI gauge without labels" do
-      previous_prefix = PrometheusExporter::Metric::Base.default_prefix
-      PrometheusExporter::Metric::Base.default_prefix = "discourse_"
-      metric = DiscoursePrometheus::InternalMetric::Global.new
-      metric.safe_exec_landlock_abi_version = 6
-
-      collector.process(metric.to_json)
-
-      metrics_text = collector.prometheus_metrics_text
-      samples = metrics_text.lines.grep(/^discourse_safe_exec_landlock_abi_version/)
-
-      expect(metrics_text).to include("# TYPE discourse_safe_exec_landlock_abi_version gauge")
-      expect(samples).to eq(["discourse_safe_exec_landlock_abi_version 6\n"])
-    ensure
-      PrometheusExporter::Metric::Base.default_prefix = previous_prefix
-    end
-  end
-
   it "processes custom metrics" do
     collector.process(<<~METRIC)
         {
@@ -56,13 +37,19 @@ RSpec.describe DiscoursePrometheus::Collector do
         }
       METRIC
 
+    global_metric = DiscoursePrometheus::InternalMetric::Global.new
+    global_metric.safe_exec_landlock_abi_version = 6
+    collector.process(global_metric.to_json)
+
     metrics = collector.prometheus_metrics
 
     counter = metrics.find { |m| m.name == "counter" }
     gauge = metrics.find { |m| m.name == "gauge" }
+    landlock_abi_version = metrics.find { |metric| metric.name == "safe_exec_landlock_abi_version" }
 
     expect(gauge.data).to eq({ "test" => "super" } => 122.1)
     expect(counter.data).to eq(nil => 3)
+    expect(landlock_abi_version.data).to eq({} => 6)
   end
 
   it "processes custom summary and histogram metrics" do

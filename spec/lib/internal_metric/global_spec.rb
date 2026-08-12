@@ -33,6 +33,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(labels[:version]).to eq(Discourse::VERSION::STRING)
     expect(value).to eq(1)
     expect(metric.safe_exec_landlock_abi_version).to eq(0)
+    expect(metric.sidekiq_processes).not_to eq(nil)
   end
 
   if SiteSetting.respond_to?("s3_inventory_bucket")

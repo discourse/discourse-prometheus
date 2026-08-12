@@ -6,7 +6,10 @@ require_relative "../../lib/collector"
 RSpec.describe DiscoursePrometheus::Collector do
   subject(:collector) { described_class.new }
 
-  it "processes custom metrics" do
+  it "processes custom and global metrics" do
+    previous_prefix = PrometheusExporter::Metric::Base.default_prefix
+    PrometheusExporter::Metric::Base.default_prefix = "discourse_"
+
     collector.process(<<~METRIC)
         {
           "_type": "Custom",
@@ -50,6 +53,11 @@ RSpec.describe DiscoursePrometheus::Collector do
     expect(gauge.data).to eq({ "test" => "super" } => 122.1)
     expect(counter.data).to eq(nil => 3)
     expect(landlock_abi_version.data).to eq({} => 6)
+    expect(collector.prometheus_metrics_text).to include(
+      "discourse_safe_exec_landlock_abi_version 6\n",
+    )
+  ensure
+    PrometheusExporter::Metric::Base.default_prefix = previous_prefix
   end
 
   it "processes custom summary and histogram metrics" do

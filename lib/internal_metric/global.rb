@@ -186,9 +186,7 @@ module DiscoursePrometheus::InternalMetric
         begin
           require "landlock"
           Landlock.abi_version
-        rescue LoadError
-          0
-        rescue Landlock::Error
+        rescue LoadError, Landlock::Error
           0
         end
     end

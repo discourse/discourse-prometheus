@@ -31,7 +31,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
 
   describe "#collect" do
     it "collects the Landlock ABI version" do
-      Discourse::SafeExec.stubs(:landlock_abi_version).returns(6)
+      Landlock.stubs(:abi_version).returns(6)
 
       metric.collect
 
@@ -39,7 +39,7 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     end
 
     it "keeps collecting global metrics when the Landlock ABI is unavailable" do
-      Discourse::SafeExec.stubs(:landlock_abi_version).returns(0)
+      Landlock.stubs(:abi_version).returns(0)
 
       metric.collect
 

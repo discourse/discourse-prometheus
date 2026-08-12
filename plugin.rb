@@ -13,7 +13,7 @@ end
 gem "prometheus_exporter", "2.2.0"
 
 require "prometheus_exporter/client"
-require "discourse/safe_exec"
+require "landlock"
 
 require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")

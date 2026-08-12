@@ -62,7 +62,7 @@ module DiscoursePrometheus::InternalMetric
 
     def collect
       @version_info ||= { { revision: @@version, version: Discourse::VERSION::STRING } => 1 }
-      @safe_exec_landlock_abi_version = Discourse::SafeExec.landlock_abi_version
+      @safe_exec_landlock_abi_version = Landlock.abi_version
 
       redis_primary_running = {}
       redis_replica_running = {}

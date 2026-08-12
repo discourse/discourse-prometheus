@@ -15,10 +15,11 @@ RSpec.describe DiscoursePrometheus::Collector do
 
       collector.process(metric.to_json)
 
-      expect(collector.prometheus_metrics_text).to include(
-        "# TYPE discourse_safe_exec_landlock_abi_version gauge",
-        "discourse_safe_exec_landlock_abi_version 6",
-      )
+      metrics_text = collector.prometheus_metrics_text
+      samples = metrics_text.lines.grep(/^discourse_safe_exec_landlock_abi_version/)
+
+      expect(metrics_text).to include("# TYPE discourse_safe_exec_landlock_abi_version gauge")
+      expect(samples).to eq(["discourse_safe_exec_landlock_abi_version 6\n"])
     ensure
       PrometheusExporter::Metric::Base.default_prefix = previous_prefix
     end

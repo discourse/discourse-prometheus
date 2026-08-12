@@ -3,7 +3,6 @@
 require "raindrops"
 require "sidekiq/api"
 require "open3"
-require "discourse/safe_exec"
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base

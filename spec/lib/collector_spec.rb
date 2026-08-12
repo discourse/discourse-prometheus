@@ -6,6 +6,24 @@ require_relative "../../lib/collector"
 RSpec.describe DiscoursePrometheus::Collector do
   subject(:collector) { described_class.new }
 
+  describe "#prometheus_metrics_text" do
+    it "renders the prefixed Landlock ABI gauge without labels" do
+      previous_prefix = PrometheusExporter::Metric::Base.default_prefix
+      PrometheusExporter::Metric::Base.default_prefix = "discourse_"
+      metric = DiscoursePrometheus::InternalMetric::Global.new
+      metric.safe_exec_landlock_abi_version = 6
+
+      collector.process(metric.to_json)
+
+      expect(collector.prometheus_metrics_text).to include(
+        "# TYPE discourse_safe_exec_landlock_abi_version gauge",
+        "discourse_safe_exec_landlock_abi_version 6",
+      )
+    ensure
+      PrometheusExporter::Metric::Base.default_prefix = previous_prefix
+    end
+  end
+
   it "processes custom metrics" do
     collector.process(<<~METRIC)
         {

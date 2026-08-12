@@ -29,6 +29,25 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
     expect(value).to eq(1)
   end
 
+  describe "#collect" do
+    it "collects the Landlock ABI version" do
+      Discourse::SafeExec.stubs(:landlock_abi_version).returns(6)
+
+      metric.collect
+
+      expect(metric.safe_exec_landlock_abi_version).to eq(6)
+    end
+
+    it "keeps collecting global metrics when the Landlock ABI is unavailable" do
+      Discourse::SafeExec.stubs(:landlock_abi_version).returns(0)
+
+      metric.collect
+
+      expect(metric.safe_exec_landlock_abi_version).to eq(0)
+      expect(metric.sidekiq_processes).not_to eq(nil)
+    end
+  end
+
   if SiteSetting.respond_to?("s3_inventory_bucket")
     describe "missing_s3_uploads metric" do
       before { SiteSetting.s3_inventory_bucket = "some-bucket/some/prefix" }

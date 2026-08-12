@@ -3,6 +3,7 @@
 require "raindrops"
 require "sidekiq/api"
 require "open3"
+require "discourse/safe_exec"
 
 module DiscoursePrometheus::InternalMetric
   class Global < Base
@@ -29,7 +30,8 @@ module DiscoursePrometheus::InternalMetric
               :version_info,
               :readonly_sites,
               :postgres_highest_sequence,
-              :tmp_dir_available_bytes
+              :tmp_dir_available_bytes,
+              :safe_exec_landlock_abi_version
 
     def initialize
       @active_app_reqs = 0
@@ -61,6 +63,7 @@ module DiscoursePrometheus::InternalMetric
 
     def collect
       @version_info ||= { { revision: @@version, version: Discourse::VERSION::STRING } => 1 }
+      @safe_exec_landlock_abi_version = Discourse::SafeExec.landlock_abi_version
 
       redis_primary_running = {}
       redis_replica_running = {}

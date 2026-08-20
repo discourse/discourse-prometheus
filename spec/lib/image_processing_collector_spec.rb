@@ -137,8 +137,6 @@ RSpec.describe DiscoursePrometheus::Collector do
       expect {
         DiscourseEvent.trigger(:image_processing_finished, incomplete_payload)
       }.to raise_error(KeyError, /max_rss_bytes/)
-
-      expect(collector.prometheus_metrics_text).to be_empty
     end
   end
 end

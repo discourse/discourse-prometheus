@@ -35,7 +35,7 @@ RSpec.describe DiscoursePrometheus::Collector do
         "error_reason" => "wall_timeout",
       }
 
-      expect(metrics.keys).to include("image_processing_command_duration_seconds")
+      expect(metrics.keys).to eq(["image_processing_command_duration_seconds"])
       expect(metrics["image_processing_command_duration_seconds"].buckets).to eq(
         [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30],
       )
@@ -64,6 +64,33 @@ RSpec.describe DiscoursePrometheus::Collector do
         metric.duration_seconds = 0.25
         metric.success = attributes[:success]
         metric.error_reason = attributes[:error_reason]
+
+        expect { collector.process(metric.to_json) }.to raise_error(ArgumentError).and output(
+                /Prometheus collector failed to process metric unknown/,
+              ).to_stderr
+      end
+
+      expect(collector.prometheus_metrics).to be_empty
+    end
+
+    it "rejects invalid operations and durations without observing them" do
+      invalid_metrics = [
+        { operation: nil, duration_seconds: 0.25 },
+        { operation: "", duration_seconds: 0.25 },
+        { operation: :optimized_image_resize, duration_seconds: 0.25 },
+        { operation: "optimized_image_resize", duration_seconds: nil },
+        { operation: "optimized_image_resize", duration_seconds: "0.25" },
+        { operation: "optimized_image_resize", duration_seconds: -0.01 },
+        { operation: "optimized_image_resize", duration_seconds: Float::NAN },
+        { operation: "optimized_image_resize", duration_seconds: Float::INFINITY },
+      ]
+
+      invalid_metrics.each do |attributes|
+        metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
+        metric.operation = attributes[:operation]
+        metric.duration_seconds = attributes[:duration_seconds]
+        metric.success = true
+        metric.error_reason = nil
 
         expect { collector.process(metric.to_json) }.to raise_error(ArgumentError).and output(
                 /Prometheus collector failed to process metric unknown/,

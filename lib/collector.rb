@@ -533,10 +533,24 @@ module ::DiscoursePrometheus
     private
 
     def process_image_processing(metric)
+      validate_image_processing_metric!(metric)
       labels = image_processing_labels(metric)
       ensure_image_processing_metrics
 
       @image_processing_command_duration_seconds.observe(metric.duration_seconds, labels)
+    end
+
+    def validate_image_processing_metric!(metric)
+      if !metric.operation.is_a?(String) || metric.operation.empty?
+        raise ArgumentError, "image-processing operation must be a non-empty string"
+      end
+
+      duration_seconds = metric.duration_seconds
+      if !duration_seconds.is_a?(Numeric) || !duration_seconds.real? || !duration_seconds.finite? ||
+           duration_seconds.negative?
+        raise ArgumentError,
+              "image-processing duration_seconds must be a finite non-negative number"
+      end
     end
 
     def image_processing_labels(metric)

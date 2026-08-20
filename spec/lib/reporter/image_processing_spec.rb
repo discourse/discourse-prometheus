@@ -19,14 +19,21 @@ RSpec.describe DiscoursePrometheus::Reporter::ImageProcessing do
   end
 
   describe ":image_processing_finished" do
-    it "rejects incomplete events without reporting observations" do
+    it "rejects events missing an operation or duration without reporting observations" do
       allow(Rails.env).to receive(:test?).and_return(false)
       $prometheus_client.expects(:send_json).never
-      incomplete_payload = { operation: "optimized_image_resize", success: true, error_reason: nil }
+      payload = {
+        operation: "optimized_image_resize",
+        success: true,
+        error_reason: nil,
+        duration_seconds: 0.25,
+      }
 
-      expect {
-        DiscourseEvent.trigger(:image_processing_finished, incomplete_payload)
-      }.to raise_error(KeyError, /duration_seconds/)
+      %i[operation duration_seconds].each do |missing_attribute|
+        expect {
+          DiscourseEvent.trigger(:image_processing_finished, payload.except(missing_attribute))
+        }.to raise_error(KeyError, /#{missing_attribute}/)
+      end
     end
   end
 end

@@ -39,16 +39,14 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Base do
     it "deserializes image-processing metrics" do
       metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
       metric.operation = "upload_auto_orient"
-      metric.success = true
-      metric.error_reason = nil
+      metric.result = "success"
       metric.duration_seconds = 0.5
 
       deserialized_metric = described_class.from_h(metric.to_h)
 
       expect(deserialized_metric).to have_attributes(
         operation: "upload_auto_orient",
-        success: true,
-        error_reason: nil,
+        result: "success",
         duration_seconds: 0.5,
       )
     end

@@ -2,6 +2,6 @@
 
 module DiscoursePrometheus::InternalMetric
   class ImageProcessing < Base
-    attribute(:operation, :success, :error_reason, :duration_seconds)
+    attribute(:operation, :result, :duration_seconds)
   end
 end

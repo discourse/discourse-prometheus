@@ -10,30 +10,20 @@ RSpec.describe DiscoursePrometheus::Collector do
     it "observes successful and failed image-processing command durations" do
       successful_metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
       successful_metric.operation = "optimized_image_resize"
-      successful_metric.success = true
-      successful_metric.error_reason = nil
+      successful_metric.result = "success"
       successful_metric.duration_seconds = 0.25
 
       failed_metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
       failed_metric.operation = "topic_og_render"
-      failed_metric.success = false
-      failed_metric.error_reason = "wall_timeout"
+      failed_metric.result = "wall_timeout"
       failed_metric.duration_seconds = 20
 
       collector.process(successful_metric.to_json)
       collector.process(failed_metric.to_json)
 
       metrics = collector.prometheus_metrics.index_by(&:name)
-      successful_labels = {
-        "operation" => "optimized_image_resize",
-        "status" => "success",
-        "error_reason" => "",
-      }
-      failed_labels = {
-        "operation" => "topic_og_render",
-        "status" => "error",
-        "error_reason" => "wall_timeout",
-      }
+      successful_labels = { "operation" => "optimized_image_resize", "result" => "success" }
+      failed_labels = { "operation" => "topic_og_render", "result" => "wall_timeout" }
 
       expect(metrics.keys).to eq(["image_processing_command_duration_seconds"])
       expect(metrics["image_processing_command_duration_seconds"].buckets).to eq(
@@ -51,19 +41,14 @@ RSpec.describe DiscoursePrometheus::Collector do
       )
     end
 
-    it "rejects invalid status and error-reason payloads without observing them" do
-      invalid_metrics = [
-        { success: nil, error_reason: nil },
-        { success: true, error_reason: "nonzero_exit" },
-        { success: false, error_reason: "an exception message" },
-      ]
+    it "rejects invalid results without observing them" do
+      invalid_results = [nil, "", :success, "an exception message"]
 
-      invalid_metrics.each do |attributes|
+      invalid_results.each do |result|
         metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
         metric.operation = "optimized_image_resize"
         metric.duration_seconds = 0.25
-        metric.success = attributes[:success]
-        metric.error_reason = attributes[:error_reason]
+        metric.result = result
 
         expect { collector.process(metric.to_json) }.to raise_error(ArgumentError).and output(
                 /Prometheus collector failed to process metric unknown/,
@@ -71,6 +56,27 @@ RSpec.describe DiscoursePrometheus::Collector do
       end
 
       expect(collector.prometheus_metrics).to be_empty
+    end
+
+    it "accepts the complete bounded result vocabulary" do
+      results = %w[success wall_timeout cpu_limit file_size_limit signal nonzero_exit exception]
+
+      results.each do |result|
+        metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
+        metric.operation = "optimized_image_resize"
+        metric.duration_seconds = 0.25
+        metric.result = result
+
+        collector.process(metric.to_json)
+      end
+
+      duration_metric = collector.prometheus_metrics.sole
+      labels = duration_metric.to_h.keys
+
+      expect(labels.map { |metric_labels| metric_labels.fetch("result") }).to contain_exactly(
+        *results,
+      )
+      expect(labels.map(&:keys).uniq).to eq([%w[operation result]])
     end
 
     it "rejects invalid operations and durations without observing them" do
@@ -89,8 +95,7 @@ RSpec.describe DiscoursePrometheus::Collector do
         metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
         metric.operation = attributes[:operation]
         metric.duration_seconds = attributes[:duration_seconds]
-        metric.success = true
-        metric.error_reason = nil
+        metric.result = "success"
 
         expect { collector.process(metric.to_json) }.to raise_error(ArgumentError).and output(
                 /Prometheus collector failed to process metric unknown/,
@@ -114,21 +119,16 @@ RSpec.describe DiscoursePrometheus::Collector do
 
       DiscourseEvent.trigger(
         :image_processing_finished,
-        {
-          operation: "optimized_image_crop",
-          success: false,
-          error_reason: "nonzero_exit",
-          duration_seconds: 0.25,
-        },
+        { operation: "optimized_image_crop", result: "nonzero_exit", duration_seconds: 0.25 },
       )
 
       metrics_text = collector.prometheus_metrics_text
 
       expect(metrics_text).to include(
         "# TYPE discourse_image_processing_command_duration_seconds histogram",
-        'discourse_image_processing_command_duration_seconds_bucket{operation="optimized_image_crop",status="error",error_reason="nonzero_exit",le="0.25"} 1',
-        'discourse_image_processing_command_duration_seconds_count{operation="optimized_image_crop",status="error",error_reason="nonzero_exit"} 1',
-        'discourse_image_processing_command_duration_seconds_sum{operation="optimized_image_crop",status="error",error_reason="nonzero_exit"} 0.25',
+        'discourse_image_processing_command_duration_seconds_bucket{operation="optimized_image_crop",result="nonzero_exit",le="0.25"} 1',
+        'discourse_image_processing_command_duration_seconds_count{operation="optimized_image_crop",result="nonzero_exit"} 1',
+        'discourse_image_processing_command_duration_seconds_sum{operation="optimized_image_crop",result="nonzero_exit"} 0.25',
       )
     ensure
       PrometheusExporter::Metric::Base.default_prefix = original_prefix

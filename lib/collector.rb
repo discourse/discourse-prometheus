@@ -11,7 +11,8 @@ module ::DiscoursePrometheus
     Histogram = ::PrometheusExporter::Metric::Histogram
 
     IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
-    IMAGE_PROCESSING_ERROR_REASONS = %w[
+    IMAGE_PROCESSING_RESULTS = %w[
+      success
       wall_timeout
       cpu_limit
       file_size_limit
@@ -20,7 +21,7 @@ module ::DiscoursePrometheus
       exception
     ].freeze
 
-    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS, :IMAGE_PROCESSING_ERROR_REASONS
+    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS, :IMAGE_PROCESSING_RESULTS
 
     class UnknownMetricTypeError < StandardError
     end
@@ -534,10 +535,12 @@ module ::DiscoursePrometheus
 
     def process_image_processing(metric)
       validate_image_processing_metric!(metric)
-      labels = image_processing_labels(metric)
       ensure_image_processing_metrics
 
-      @image_processing_command_duration_seconds.observe(metric.duration_seconds, labels)
+      @image_processing_command_duration_seconds.observe(
+        metric.duration_seconds,
+        { "operation" => metric.operation, "result" => metric.result },
+      )
     end
 
     def validate_image_processing_metric!(metric)
@@ -551,23 +554,10 @@ module ::DiscoursePrometheus
         raise ArgumentError,
               "image-processing duration_seconds must be a finite non-negative number"
       end
-    end
 
-    def image_processing_labels(metric)
-      status = metric.success ? "success" : "error"
-      error_reason = metric.error_reason.to_s
-
-      if metric.success != true && metric.success != false
-        raise ArgumentError, "image-processing success must be true or false"
+      if !metric.result.is_a?(String) || !IMAGE_PROCESSING_RESULTS.include?(metric.result)
+        raise ArgumentError, "unknown image-processing result"
       end
-      if metric.success && !error_reason.empty?
-        raise ArgumentError, "successful image-processing metrics cannot have an error reason"
-      end
-      if !metric.success && !IMAGE_PROCESSING_ERROR_REASONS.include?(error_reason)
-        raise ArgumentError, "unknown image-processing error reason"
-      end
-
-      { "operation" => metric.operation.to_s, "status" => status, "error_reason" => error_reason }
     end
 
     def ensure_image_processing_metrics

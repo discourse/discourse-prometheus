@@ -34,4 +34,27 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Base do
     expect(job.class).to eq(DiscoursePrometheus::InternalMetric::Job)
     expect(job.job_name).to eq("bill")
   end
+
+  describe ".from_h" do
+    it "deserializes image-processing metrics" do
+      metric = DiscoursePrometheus::InternalMetric::ImageProcessing.new
+      metric.operation = "upload_auto_orient"
+      metric.success = true
+      metric.error_reason = "none"
+      metric.duration_seconds = 0.5
+      metric.cpu_seconds = 0.25
+      metric.max_rss_bytes = 4.megabytes
+
+      deserialized_metric = described_class.from_h(metric.to_h)
+
+      expect(deserialized_metric).to have_attributes(
+        operation: "upload_auto_orient",
+        success: true,
+        error_reason: "none",
+        duration_seconds: 0.5,
+        cpu_seconds: 0.25,
+        max_rss_bytes: 4.megabytes,
+      )
+    end
+  end
 end

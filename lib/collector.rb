@@ -10,6 +10,15 @@ module ::DiscoursePrometheus
     Summary = ::PrometheusExporter::Metric::Summary
     Histogram = ::PrometheusExporter::Metric::Histogram
 
+    IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
+    IMAGE_PROCESSING_CPU_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300]
+    IMAGE_PROCESSING_MAX_RSS_BUCKETS =
+      [1, 4, 16, 64, 128, 256, 512, 1024, 2048, 4096].map { |megabytes| megabytes * 1024 * 1024 }
+
+    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS,
+                     :IMAGE_PROCESSING_CPU_BUCKETS,
+                     :IMAGE_PROCESSING_MAX_RSS_BUCKETS
+
     class UnknownMetricTypeError < StandardError
     end
 
@@ -47,6 +56,10 @@ module ::DiscoursePrometheus
       @global_metrics = []
 
       @custom_metrics = nil
+
+      @image_processing_duration_seconds = nil
+      @image_processing_cpu_seconds = nil
+      @image_processing_max_rss_bytes = nil
     end
 
     def process(str)
@@ -66,6 +79,8 @@ module ::DiscoursePrometheus
         process_global(metric)
       elsif InternalMetric::Custom === metric
         process_custom(metric)
+      elsif InternalMetric::ImageProcessing === metric
+        process_image_processing(metric)
       end
     rescue => e
       metric_name =
@@ -508,12 +523,62 @@ module ::DiscoursePrometheus
     end
 
     def prometheus_metrics
-      metrics = web_metrics + process_metrics + job_metrics + @global_metrics
+      metrics =
+        web_metrics + process_metrics + job_metrics + image_processing_metrics + @global_metrics
       metrics += @custom_metrics.values if @custom_metrics
       metrics
     end
 
     private
+
+    def process_image_processing(metric)
+      ensure_image_processing_metrics
+
+      labels = {
+        "operation" => metric.operation.to_s,
+        "success" => metric.success.to_s,
+        "error_reason" => metric.error_reason.to_s,
+      }
+
+      @image_processing_duration_seconds.observe(metric.duration_seconds, labels)
+      @image_processing_cpu_seconds.observe(metric.cpu_seconds, labels)
+      @image_processing_max_rss_bytes.observe(metric.max_rss_bytes, labels)
+    end
+
+    def ensure_image_processing_metrics
+      return if @image_processing_duration_seconds
+
+      @image_processing_duration_seconds =
+        Histogram.new(
+          "image_processing_duration_seconds",
+          "Wall-clock duration of image-processing operations",
+          buckets: IMAGE_PROCESSING_DURATION_BUCKETS,
+        )
+      @image_processing_cpu_seconds =
+        Histogram.new(
+          "image_processing_cpu_seconds",
+          "CPU time consumed by image-processing operations",
+          buckets: IMAGE_PROCESSING_CPU_BUCKETS,
+        )
+      @image_processing_max_rss_bytes =
+        Histogram.new(
+          "image_processing_max_rss_bytes",
+          "Peak resident memory used by image-processing operations",
+          buckets: IMAGE_PROCESSING_MAX_RSS_BUCKETS,
+        )
+    end
+
+    def image_processing_metrics
+      if @image_processing_duration_seconds
+        [
+          @image_processing_duration_seconds,
+          @image_processing_cpu_seconds,
+          @image_processing_max_rss_bytes,
+        ]
+      else
+        []
+      end
+    end
 
     def job_metrics
       if @scheduled_job_duration_seconds

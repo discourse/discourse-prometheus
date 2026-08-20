@@ -20,10 +20,12 @@ require_relative("lib/internal_metric/job")
 require_relative("lib/internal_metric/process")
 require_relative("lib/internal_metric/web")
 require_relative("lib/internal_metric/custom")
+require_relative("lib/internal_metric/image_processing")
 
 require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
 require_relative("lib/reporter/web")
+require_relative("lib/reporter/image_processing")
 
 require_relative("lib/collector_demon")
 require_relative("lib/global_reporter_demon")
@@ -47,6 +49,11 @@ after_initialize do
 
   # creates no new threads, this simply adds the instruments
   DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
+  image_processing_reporter = DiscoursePrometheus::Reporter::ImageProcessing.new($prometheus_client)
+
+  on(:image_processing_finished) do |payload|
+    image_processing_reporter.report(payload) unless Rails.env.test?
+  end
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)
   register_demon_process(DiscoursePrometheus::GlobalReporterDemon)

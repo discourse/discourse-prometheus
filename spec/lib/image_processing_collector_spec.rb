@@ -25,11 +25,11 @@ RSpec.describe DiscoursePrometheus::Collector do
       successful_labels = { "operation" => "optimized_image_resize", "success" => "true" }
       failed_labels = { "operation" => "topic_og_render", "success" => "false" }
 
-      expect(metrics.keys).to eq(["image_processing_command_duration_seconds"])
-      expect(metrics["image_processing_command_duration_seconds"].buckets).to eq(
+      expect(metrics.keys).to eq(["image_processing_duration_seconds"])
+      expect(metrics["image_processing_duration_seconds"].buckets).to eq(
         [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30],
       )
-      observations = metrics["image_processing_command_duration_seconds"].to_h
+      observations = metrics["image_processing_duration_seconds"].to_h
       expect(observations).to eq(
         successful_labels => {
           "count" => 1,
@@ -106,10 +106,10 @@ RSpec.describe DiscoursePrometheus::Collector do
       metrics_text = collector.prometheus_metrics_text
 
       expect(metrics_text).to include(
-        "# TYPE discourse_image_processing_command_duration_seconds histogram",
-        'discourse_image_processing_command_duration_seconds_bucket{operation="optimized_image_crop",success="false",le="0.25"} 1',
-        'discourse_image_processing_command_duration_seconds_count{operation="optimized_image_crop",success="false"} 1',
-        'discourse_image_processing_command_duration_seconds_sum{operation="optimized_image_crop",success="false"} 0.25',
+        "# TYPE discourse_image_processing_duration_seconds histogram",
+        'discourse_image_processing_duration_seconds_bucket{operation="optimized_image_crop",success="false",le="0.25"} 1',
+        'discourse_image_processing_duration_seconds_count{operation="optimized_image_crop",success="false"} 1',
+        'discourse_image_processing_duration_seconds_sum{operation="optimized_image_crop",success="false"} 0.25',
       )
     ensure
       PrometheusExporter::Metric::Base.default_prefix = original_prefix

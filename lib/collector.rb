@@ -52,7 +52,7 @@ module ::DiscoursePrometheus
 
       @custom_metrics = nil
 
-      @image_processing_command_duration_seconds = nil
+      @image_processing_duration_seconds = nil
     end
 
     def process(str)
@@ -528,7 +528,7 @@ module ::DiscoursePrometheus
       validate_image_processing_metric!(metric)
       ensure_image_processing_metrics
 
-      @image_processing_command_duration_seconds.observe(
+      @image_processing_duration_seconds.observe(
         metric.duration_seconds,
         { "operation" => metric.operation, "success" => metric.success.to_s },
       )
@@ -552,18 +552,18 @@ module ::DiscoursePrometheus
     end
 
     def ensure_image_processing_metrics
-      return if @image_processing_command_duration_seconds
+      return if @image_processing_duration_seconds
 
-      @image_processing_command_duration_seconds =
+      @image_processing_duration_seconds =
         Histogram.new(
-          "image_processing_command_duration_seconds",
+          "image_processing_duration_seconds",
           "Wall-clock duration of image-processing commands",
           buckets: IMAGE_PROCESSING_DURATION_BUCKETS,
         )
     end
 
     def image_processing_metrics
-      @image_processing_command_duration_seconds ? [@image_processing_command_duration_seconds] : []
+      @image_processing_duration_seconds ? [@image_processing_duration_seconds] : []
     end
 
     def job_metrics

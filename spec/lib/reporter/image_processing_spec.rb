@@ -10,8 +10,6 @@ RSpec.describe DiscoursePrometheus::Reporter::ImageProcessing do
         success: false,
         error_reason: "nonzero_exit",
         duration_seconds: 1.25,
-        cpu_seconds: 0.75,
-        max_rss_bytes: 64.megabytes,
       }
 
       client.expects(:send_json).with(payload.merge(_type: "ImageProcessing"))
@@ -24,17 +22,11 @@ RSpec.describe DiscoursePrometheus::Reporter::ImageProcessing do
     it "rejects incomplete events without reporting observations" do
       allow(Rails.env).to receive(:test?).and_return(false)
       $prometheus_client.expects(:send_json).never
-      incomplete_payload = {
-        operation: "optimized_image_resize",
-        success: true,
-        error_reason: "none",
-        duration_seconds: 0.25,
-        cpu_seconds: 0.1,
-      }
+      incomplete_payload = { operation: "optimized_image_resize", success: true, error_reason: nil }
 
       expect {
         DiscourseEvent.trigger(:image_processing_finished, incomplete_payload)
-      }.to raise_error(KeyError, /max_rss_bytes/)
+      }.to raise_error(KeyError, /duration_seconds/)
     end
   end
 end

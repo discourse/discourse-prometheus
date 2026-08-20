@@ -11,13 +11,16 @@ module ::DiscoursePrometheus
     Histogram = ::PrometheusExporter::Metric::Histogram
 
     IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
-    IMAGE_PROCESSING_CPU_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300]
-    IMAGE_PROCESSING_MAX_RSS_BUCKETS =
-      [1, 4, 16, 64, 128, 256, 512, 1024, 2048, 4096].map { |megabytes| megabytes * 1024 * 1024 }
+    IMAGE_PROCESSING_ERROR_REASONS = %w[
+      wall_timeout
+      cpu_limit
+      file_size_limit
+      signal
+      nonzero_exit
+      exception
+    ].freeze
 
-    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS,
-                     :IMAGE_PROCESSING_CPU_BUCKETS,
-                     :IMAGE_PROCESSING_MAX_RSS_BUCKETS
+    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS, :IMAGE_PROCESSING_ERROR_REASONS
 
     class UnknownMetricTypeError < StandardError
     end
@@ -57,9 +60,7 @@ module ::DiscoursePrometheus
 
       @custom_metrics = nil
 
-      @image_processing_duration_seconds = nil
-      @image_processing_cpu_seconds = nil
-      @image_processing_max_rss_bytes = nil
+      @image_processing_command_duration_seconds = nil
     end
 
     def process(str)
@@ -532,52 +533,42 @@ module ::DiscoursePrometheus
     private
 
     def process_image_processing(metric)
+      labels = image_processing_labels(metric)
       ensure_image_processing_metrics
 
-      labels = {
-        "operation" => metric.operation.to_s,
-        "success" => metric.success.to_s,
-        "error_reason" => metric.error_reason.to_s,
-      }
+      @image_processing_command_duration_seconds.observe(metric.duration_seconds, labels)
+    end
 
-      @image_processing_duration_seconds.observe(metric.duration_seconds, labels)
-      @image_processing_cpu_seconds.observe(metric.cpu_seconds, labels)
-      @image_processing_max_rss_bytes.observe(metric.max_rss_bytes, labels)
+    def image_processing_labels(metric)
+      status = metric.success ? "success" : "error"
+      error_reason = metric.error_reason.to_s
+
+      if metric.success != true && metric.success != false
+        raise ArgumentError, "image-processing success must be true or false"
+      end
+      if metric.success && !error_reason.empty?
+        raise ArgumentError, "successful image-processing metrics cannot have an error reason"
+      end
+      if !metric.success && !IMAGE_PROCESSING_ERROR_REASONS.include?(error_reason)
+        raise ArgumentError, "unknown image-processing error reason"
+      end
+
+      { "operation" => metric.operation.to_s, "status" => status, "error_reason" => error_reason }
     end
 
     def ensure_image_processing_metrics
-      return if @image_processing_duration_seconds
+      return if @image_processing_command_duration_seconds
 
-      @image_processing_duration_seconds =
+      @image_processing_command_duration_seconds =
         Histogram.new(
-          "image_processing_duration_seconds",
-          "Wall-clock duration of image-processing operations",
+          "image_processing_command_duration_seconds",
+          "Wall-clock duration of image-processing commands",
           buckets: IMAGE_PROCESSING_DURATION_BUCKETS,
-        )
-      @image_processing_cpu_seconds =
-        Histogram.new(
-          "image_processing_cpu_seconds",
-          "CPU time consumed by image-processing operations",
-          buckets: IMAGE_PROCESSING_CPU_BUCKETS,
-        )
-      @image_processing_max_rss_bytes =
-        Histogram.new(
-          "image_processing_max_rss_bytes",
-          "Peak resident memory used by image-processing operations",
-          buckets: IMAGE_PROCESSING_MAX_RSS_BUCKETS,
         )
     end
 
     def image_processing_metrics
-      if @image_processing_duration_seconds
-        [
-          @image_processing_duration_seconds,
-          @image_processing_cpu_seconds,
-          @image_processing_max_rss_bytes,
-        ]
-      else
-        []
-      end
+      @image_processing_command_duration_seconds ? [@image_processing_command_duration_seconds] : []
     end
 
     def job_metrics

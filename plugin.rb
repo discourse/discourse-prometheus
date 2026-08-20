@@ -51,9 +51,7 @@ after_initialize do
   DiscoursePrometheus::Reporter::Web.start($prometheus_client) unless Rails.env.test?
   image_processing_reporter = DiscoursePrometheus::Reporter::ImageProcessing.new($prometheus_client)
 
-  on(:image_processing_finished) do |payload|
-    image_processing_reporter.report(payload) unless Rails.env.test?
-  end
+  on(:image_processing_finished) { |payload| image_processing_reporter.report(payload) }
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)
   register_demon_process(DiscoursePrometheus::GlobalReporterDemon)

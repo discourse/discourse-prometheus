@@ -91,7 +91,6 @@ RSpec.describe DiscoursePrometheus::Collector do
     it "exports an image-processing event through the public Prometheus exposition" do
       original_prefix = PrometheusExporter::Metric::Base.default_prefix
       PrometheusExporter::Metric::Base.default_prefix = "discourse_"
-      allow(Rails.env).to receive(:test?).and_return(false)
       allow($prometheus_client).to receive(:send_json) do |metric|
         collector.process(Oj.dump(metric, mode: :object))
       end

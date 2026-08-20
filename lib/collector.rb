@@ -11,17 +11,8 @@ module ::DiscoursePrometheus
     Histogram = ::PrometheusExporter::Metric::Histogram
 
     IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
-    IMAGE_PROCESSING_RESULTS = %w[
-      success
-      wall_timeout
-      cpu_limit
-      file_size_limit
-      signal
-      nonzero_exit
-      exception
-    ].freeze
 
-    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS, :IMAGE_PROCESSING_RESULTS
+    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS
 
     class UnknownMetricTypeError < StandardError
     end
@@ -539,7 +530,7 @@ module ::DiscoursePrometheus
 
       @image_processing_command_duration_seconds.observe(
         metric.duration_seconds,
-        { "operation" => metric.operation, "result" => metric.result },
+        { "operation" => metric.operation, "success" => metric.success.to_s },
       )
     end
 
@@ -555,8 +546,8 @@ module ::DiscoursePrometheus
               "image-processing duration_seconds must be a finite non-negative number"
       end
 
-      if !metric.result.is_a?(String) || !IMAGE_PROCESSING_RESULTS.include?(metric.result)
-        raise ArgumentError, "unknown image-processing result"
+      if metric.success != true && metric.success != false
+        raise ArgumentError, "image-processing success must be true or false"
       end
     end
 

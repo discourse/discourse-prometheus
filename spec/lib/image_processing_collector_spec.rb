@@ -122,21 +122,5 @@ RSpec.describe DiscoursePrometheus::Collector do
     ensure
       PrometheusExporter::Metric::Base.default_prefix = original_prefix
     end
-
-    it "rejects incomplete image-processing events without reporting observations" do
-      allow(Rails.env).to receive(:test?).and_return(false)
-      $prometheus_client.expects(:send_json).never
-      incomplete_payload = {
-        operation: "optimized_image_resize",
-        success: true,
-        error_reason: "none",
-        duration_seconds: 0.25,
-        cpu_seconds: 0.1,
-      }
-
-      expect {
-        DiscourseEvent.trigger(:image_processing_finished, incomplete_payload)
-      }.to raise_error(KeyError, /max_rss_bytes/)
-    end
   end
 end

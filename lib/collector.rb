@@ -11,7 +11,6 @@ module ::DiscoursePrometheus
     Histogram = ::PrometheusExporter::Metric::Histogram
 
     IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
-
     private_constant :IMAGE_PROCESSING_DURATION_BUCKETS
 
     class UnknownMetricTypeError < StandardError

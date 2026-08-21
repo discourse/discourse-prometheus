@@ -24,6 +24,8 @@ module DiscoursePrometheus::InternalMetric
           Process
         when "Custom"
           Custom
+        when "ImageProcessing"
+          ImageProcessing
         else
           raise "class deserialization not implemented"
         end
@@ -60,6 +62,8 @@ module DiscoursePrometheus::InternalMetric
           "Process"
         when Custom
           "Custom"
+        when ImageProcessing
+          "ImageProcessing"
         else
           raise "not implemented"
         end

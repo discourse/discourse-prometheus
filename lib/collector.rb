@@ -10,6 +10,9 @@ module ::DiscoursePrometheus
     Summary = ::PrometheusExporter::Metric::Summary
     Histogram = ::PrometheusExporter::Metric::Histogram
 
+    IMAGE_PROCESSING_DURATION_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30]
+    private_constant :IMAGE_PROCESSING_DURATION_BUCKETS
+
     class UnknownMetricTypeError < StandardError
     end
 
@@ -47,6 +50,8 @@ module ::DiscoursePrometheus
       @global_metrics = []
 
       @custom_metrics = nil
+
+      @image_processing_duration_seconds = nil
     end
 
     def process(str)
@@ -66,6 +71,8 @@ module ::DiscoursePrometheus
         process_global(metric)
       elsif InternalMetric::Custom === metric
         process_custom(metric)
+      elsif InternalMetric::ImageProcessing === metric
+        process_image_processing(metric)
       end
     rescue => e
       metric_name =
@@ -508,12 +515,55 @@ module ::DiscoursePrometheus
     end
 
     def prometheus_metrics
-      metrics = web_metrics + process_metrics + job_metrics + @global_metrics
+      metrics =
+        web_metrics + process_metrics + job_metrics + image_processing_metrics + @global_metrics
       metrics += @custom_metrics.values if @custom_metrics
       metrics
     end
 
     private
+
+    def process_image_processing(metric)
+      validate_image_processing_metric!(metric)
+      ensure_image_processing_metrics
+
+      @image_processing_duration_seconds.observe(
+        metric.duration_seconds,
+        { "operation" => metric.operation, "success" => metric.success.to_s },
+      )
+    end
+
+    def validate_image_processing_metric!(metric)
+      if !metric.operation.is_a?(String) || metric.operation.empty?
+        raise ArgumentError, "image-processing operation must be a non-empty string"
+      end
+
+      duration_seconds = metric.duration_seconds
+      if !duration_seconds.is_a?(Numeric) || !duration_seconds.real? || !duration_seconds.finite? ||
+           duration_seconds.negative?
+        raise ArgumentError,
+              "image-processing duration_seconds must be a finite non-negative number"
+      end
+
+      if metric.success != true && metric.success != false
+        raise ArgumentError, "image-processing success must be true or false"
+      end
+    end
+
+    def ensure_image_processing_metrics
+      return if @image_processing_duration_seconds
+
+      @image_processing_duration_seconds =
+        Histogram.new(
+          "image_processing_duration_seconds",
+          "Wall-clock duration of image-processing commands",
+          buckets: IMAGE_PROCESSING_DURATION_BUCKETS,
+        )
+    end
+
+    def image_processing_metrics
+      @image_processing_duration_seconds ? [@image_processing_duration_seconds] : []
+    end
 
     def job_metrics
       if @scheduled_job_duration_seconds

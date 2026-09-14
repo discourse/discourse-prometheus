@@ -90,7 +90,7 @@ RSpec.describe DiscoursePrometheus::Middleware::Metrics do
       body = body.join
 
       expect(status).to eq(200)
-      expect(headers["Content-Type"]).to eq("text/plain; charset=utf-8")
+      expect(headers["content-type"]).to eq("text/plain; charset=utf-8")
       expect(body).to include("hello world")
     end
   end
@@ -107,7 +107,7 @@ RSpec.describe DiscoursePrometheus::Middleware::Metrics do
     body = body.join
 
     expect(status).to eq(200)
-    expect(headers["Content-Type"]).to eq("text/plain; charset=utf-8")
+    expect(headers["content-type"]).to eq("text/plain; charset=utf-8")
     expect(body).to include("hello world")
   end
 
@@ -122,7 +122,7 @@ RSpec.describe DiscoursePrometheus::Middleware::Metrics do
     body = body.join
 
     expect(status).to eq(200)
-    expect(headers["Content-Type"]).to eq("text/plain; charset=utf-8")
+    expect(headers["content-type"]).to eq("text/plain; charset=utf-8")
     expect(body).to include("hello world")
   end
 end

@@ -13,7 +13,6 @@ end
 gem "prometheus_exporter", "2.2.0"
 
 require "prometheus_exporter/client"
-require "timeout"
 
 require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")
@@ -61,12 +60,7 @@ after_initialize do
     metric.description = "Total number of Pitchfork soft worker timeouts"
     metric.value = 1
 
-    Timeout.timeout(1) do
-      $prometheus_client.send_json(metric.to_h)
-      $prometheus_client.stop(wait_timeout_seconds: 1)
-    end
-  rescue => error
-    Rails.logger.warn("Failed to report worker timeout: #{error.message}")
+    $prometheus_client.send_json_sync(metric.to_h)
   end
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)

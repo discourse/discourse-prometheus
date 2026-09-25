@@ -26,6 +26,7 @@ require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
 require_relative("lib/reporter/web")
 require_relative("lib/reporter/image_processing")
+require_relative("lib/reporter/worker_timeout")
 
 require_relative("lib/collector_demon")
 require_relative("lib/global_reporter_demon")
@@ -52,6 +53,8 @@ after_initialize do
   image_processing_reporter = DiscoursePrometheus::Reporter::ImageProcessing.new($prometheus_client)
 
   on(:image_processing_finished) { |payload| image_processing_reporter.report(payload) }
+
+  on(:web_worker_timeout) { DiscoursePrometheus::Reporter::WorkerTimeout.new.report }
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)
   register_demon_process(DiscoursePrometheus::GlobalReporterDemon)

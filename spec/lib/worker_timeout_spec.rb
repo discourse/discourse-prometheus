@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "prometheus_exporter/server"
-require_relative "../../../lib/collector"
+require_relative "../../lib/collector"
 
-RSpec.describe DiscoursePrometheus::Reporter::WorkerTimeout do
-  describe "#report" do
+RSpec.describe DiscoursePrometheus do
+  describe ":web_worker_timeout" do
     it "delivers timeout events before their reporting processes exit" do
       socket = TCPServer.new("127.0.0.1", 0)
       port = socket.addr[1]
@@ -48,14 +48,14 @@ RSpec.describe DiscoursePrometheus::Reporter::WorkerTimeout do
       socket.close
       global_setting :prometheus_collector_port, port
 
-      expect { described_class.new.report }.not_to raise_error
+      expect { DiscourseEvent.trigger(:web_worker_timeout) }.not_to raise_error
     end
 
     it "bounds reporting when the collector connection stalls" do
       allow(TCPSocket).to receive(:new) { sleep 30 }
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-      described_class.new.report
+      DiscourseEvent.trigger(:web_worker_timeout)
 
       expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at).to be < 3
     end

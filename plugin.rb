@@ -13,6 +13,7 @@ end
 gem "prometheus_exporter", "2.2.0"
 
 require "prometheus_exporter/client"
+require "timeout"
 
 require_relative("lib/internal_metric/base")
 require_relative("lib/internal_metric/global")
@@ -26,7 +27,6 @@ require_relative("lib/reporter/process")
 require_relative("lib/reporter/global")
 require_relative("lib/reporter/web")
 require_relative("lib/reporter/image_processing")
-require_relative("lib/reporter/worker_timeout")
 
 require_relative("lib/collector_demon")
 require_relative("lib/global_reporter_demon")
@@ -54,7 +54,30 @@ after_initialize do
 
   on(:image_processing_finished) { |payload| image_processing_reporter.report(payload) }
 
-  on(:web_worker_timeout) { DiscoursePrometheus::Reporter::WorkerTimeout.new.report }
+  on(:web_worker_timeout) do
+    metric = DiscoursePrometheus::InternalMetric::Custom.new
+    metric.type = "Counter"
+    metric.name = "pitchfork_worker_timeouts_total"
+    metric.description = "Total number of Pitchfork soft worker timeouts"
+    metric.value = 1
+
+    client =
+      PrometheusExporter::Client.new(
+        host: "localhost",
+        port: GlobalSetting.prometheus_collector_port,
+        process_queue_once_and_stop: true,
+      )
+
+    Timeout.timeout(1) do
+      begin
+        client.send_json(metric.to_h)
+      ensure
+        client.stop
+      end
+    end
+  rescue => error
+    Rails.logger.warn("Failed to report worker timeout: #{error.message}")
+  end
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)
   register_demon_process(DiscoursePrometheus::GlobalReporterDemon)

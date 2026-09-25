@@ -5,11 +5,18 @@ require_relative "../../lib/collector"
 
 RSpec.describe DiscoursePrometheus do
   describe ":web_worker_timeout" do
+    let(:port) { TCPServer.open("127.0.0.1", 0) { |socket| socket.addr[1] } }
+
+    around do |example|
+      original_client = $prometheus_client
+      $prometheus_client = PrometheusExporter::Client.new(host: "127.0.0.1", port: port)
+      example.run
+    ensure
+      $prometheus_client.stop
+      $prometheus_client = original_client
+    end
+
     it "delivers timeout events before their reporting processes exit" do
-      socket = TCPServer.new("127.0.0.1", 0)
-      port = socket.addr[1]
-      socket.close
-      global_setting :prometheus_collector_port, port
       collector = DiscoursePrometheus::Collector.new
       server =
         PrometheusExporter::Server::WebServer.new(
@@ -39,15 +46,9 @@ RSpec.describe DiscoursePrometheus do
     ensure
       server&.stop
       runner&.join
-      socket&.close unless socket&.closed?
     end
 
     it "returns when the collector is unavailable" do
-      socket = TCPServer.new("127.0.0.1", 0)
-      port = socket.addr[1]
-      socket.close
-      global_setting :prometheus_collector_port, port
-
       expect { DiscourseEvent.trigger(:web_worker_timeout) }.not_to raise_error
     end
 

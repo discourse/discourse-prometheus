@@ -61,19 +61,9 @@ after_initialize do
     metric.description = "Total number of Pitchfork soft worker timeouts"
     metric.value = 1
 
-    client =
-      PrometheusExporter::Client.new(
-        host: "localhost",
-        port: GlobalSetting.prometheus_collector_port,
-        process_queue_once_and_stop: true,
-      )
-
     Timeout.timeout(1) do
-      begin
-        client.send_json(metric.to_h)
-      ensure
-        client.stop
-      end
+      $prometheus_client.send_json(metric.to_h)
+      $prometheus_client.stop(wait_timeout_seconds: 1)
     end
   rescue => error
     Rails.logger.warn("Failed to report worker timeout: #{error.message}")

@@ -53,6 +53,16 @@ after_initialize do
 
   on(:image_processing_finished) { |payload| image_processing_reporter.report(payload) }
 
+  on(:web_worker_timeout) do
+    metric = DiscoursePrometheus::InternalMetric::Custom.new
+    metric.type = "Counter"
+    metric.name = "pitchfork_worker_timeouts_total"
+    metric.description = "Total number of Pitchfork soft worker timeouts"
+    metric.value = 1
+
+    $prometheus_client.send_json_sync(metric.to_h)
+  end
+
   register_demon_process(DiscoursePrometheus::CollectorDemon)
   register_demon_process(DiscoursePrometheus::GlobalReporterDemon)
 

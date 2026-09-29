@@ -60,7 +60,7 @@ after_initialize do
     metric.description = "Total number of Pitchfork soft worker timeouts"
     metric.value = 1
 
-    $prometheus_client.send_json_sync(metric.to_h)
+    $prometheus_client.send_json(metric.to_h, sync: true)
   end
 
   register_demon_process(DiscoursePrometheus::CollectorDemon)

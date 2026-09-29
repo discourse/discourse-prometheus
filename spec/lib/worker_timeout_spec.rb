@@ -7,7 +7,8 @@ RSpec.describe DiscoursePrometheus do
   describe ":web_worker_timeout" do
     it "increments the timeout counter through the shared client" do
       collector = DiscoursePrometheus::Collector.new
-      allow($prometheus_client).to receive(:send_json_sync) do |metric|
+      allow($prometheus_client).to receive(:send_json) do |metric, sync:|
+        expect(sync).to eq(true)
         collector.process(Oj.dump(metric, mode: :object))
       end
 

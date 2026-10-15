@@ -161,9 +161,9 @@ module DiscoursePrometheus::Reporter
       return if metric.yjit_enabled == 0
 
       stats = RubyVM::YJIT.runtime_stats
-      metric.yjit_code_region_size_bytes = stats[:code_region_size]
-      metric.yjit_alloc_size_bytes = stats[:yjit_alloc_size]
-      metric.yjit_compilation_failure_total = stats[:compilation_failure]
+      return unless stats[:code_region_size] && stats[:yjit_alloc_size]
+
+      metric.yjit_memory_usage_bytes = stats[:code_region_size] + stats[:yjit_alloc_size]
     end
   end
 end

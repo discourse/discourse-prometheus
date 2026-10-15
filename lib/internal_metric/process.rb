@@ -4,8 +4,7 @@ module DiscoursePrometheus::InternalMetric
   class Process < Base
     GAUGES = {
       yjit_enabled: "Whether YJIT is enabled in the web worker (1 enabled, 0 disabled)",
-      yjit_code_region_size_bytes: "Memory mapped for YJIT code in bytes",
-      yjit_alloc_size_bytes: "Memory allocated on the YJIT Rust heap in bytes",
+      yjit_memory_usage_bytes: "Combined YJIT code region and Rust heap memory usage in bytes",
       heap_free_slots: "Free ruby heap slots",
       heap_live_slots: "Used ruby heap slots",
       v8_heap_size: "Total JavaScript V8 heap size (bytes)",
@@ -22,8 +21,6 @@ module DiscoursePrometheus::InternalMetric
     }
 
     COUNTERS = {
-      yjit_compilation_failure_total:
-        "Failed YJIT compilations since process start, including causes other than memory pressure",
       gc_major_by: "Reason the last major GC was triggered",
       major_gc_count: "Major GC operations by process",
       minor_gc_count: "Minor GC operations by process",
@@ -34,9 +31,7 @@ module DiscoursePrometheus::InternalMetric
 
     attribute :type,
               :yjit_enabled,
-              :yjit_code_region_size_bytes,
-              :yjit_alloc_size_bytes,
-              :yjit_compilation_failure_total,
+              :yjit_memory_usage_bytes,
               :gc_major_by,
               :heap_free_slots,
               :heap_live_slots,

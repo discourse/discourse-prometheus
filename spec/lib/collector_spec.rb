@@ -14,11 +14,11 @@ RSpec.describe DiscoursePrometheus::Collector do
 
     after { PrometheusExporter::Metric::Base.default_prefix = @original_prefix }
 
-    it "exports YJIT snapshots per web worker without accumulating cumulative counts" do
+    it "exports combined YJIT memory usage per web worker, including zero usage" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
       RubyVM::YJIT.stubs(:runtime_stats).returns(
-        { code_region_size: 1024, yjit_alloc_size: 2048, compilation_failure: 0 },
-        { code_region_size: 4096, yjit_alloc_size: 8192, compilation_failure: 3 },
+        { code_region_size: 1024, yjit_alloc_size: 2048 },
+        { code_region_size: 0, yjit_alloc_size: 0 },
       )
       reporter = DiscoursePrometheus::Reporter::Process.new(:web)
       first = reporter.collect
@@ -31,27 +31,23 @@ RSpec.describe DiscoursePrometheus::Collector do
 
       text = collector.prometheus_metrics_text
 
+      expect(collector.prometheus_metrics.map(&:name).grep(/\Ayjit_/)).to contain_exactly(
+        "yjit_enabled",
+        "yjit_memory_usage_bytes",
+      )
       expect(text).to include(
         "# TYPE discourse_yjit_enabled gauge",
-        "# TYPE discourse_yjit_code_region_size_bytes gauge",
-        "# TYPE discourse_yjit_alloc_size_bytes gauge",
-        "# TYPE discourse_yjit_compilation_failure_total counter",
+        "# TYPE discourse_yjit_memory_usage_bytes gauge",
         'discourse_yjit_enabled{type="web",pid="100"} 1',
-        'discourse_yjit_code_region_size_bytes{type="web",pid="100"} 1024',
-        'discourse_yjit_alloc_size_bytes{type="web",pid="100"} 2048',
-        'discourse_yjit_compilation_failure_total{type="web",pid="100"} 0',
+        'discourse_yjit_memory_usage_bytes{type="web",pid="100"} 3072',
         'discourse_yjit_enabled{type="web",pid="200"} 1',
-        'discourse_yjit_code_region_size_bytes{type="web",pid="200"} 4096',
-        'discourse_yjit_alloc_size_bytes{type="web",pid="200"} 8192',
-        'discourse_yjit_compilation_failure_total{type="web",pid="200"} 3',
+        'discourse_yjit_memory_usage_bytes{type="web",pid="200"} 0',
       )
     end
 
     it "replaces enabled snapshots with disabled state and omits Sidekiq YJIT samples" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns(
-        { code_region_size: 1024, yjit_alloc_size: 2048, compilation_failure: 3 },
-      )
+      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
       reporter = DiscoursePrometheus::Reporter::Process.new(:web)
       collector.process(reporter.collect.to_json)
       RubyVM::YJIT.stubs(:enabled?).returns(false)
@@ -67,9 +63,7 @@ RSpec.describe DiscoursePrometheus::Collector do
 
     it "expires YJIT samples from retired workers" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns(
-        { code_region_size: 1024, yjit_alloc_size: 2048, compilation_failure: 3 },
-      )
+      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
       collector.process(DiscoursePrometheus::Reporter::Process.new(:web).collect.to_json)
       later = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 61
       Process.stubs(:clock_gettime).with(Process::CLOCK_MONOTONIC).returns(later)

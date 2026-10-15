@@ -2,34 +2,22 @@
 
 RSpec.describe DiscoursePrometheus::Reporter::Process do
   describe "#collect" do
-    it "collects YJIT state, memory usage, and compilation failures for web workers" do
+    it "collects YJIT state and combined memory usage for web workers" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns(
-        { code_region_size: 1024, yjit_alloc_size: 2048, compilation_failure: 3 },
-      )
+      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
 
       metric = described_class.new(:web).collect
 
-      expect(metric).to have_attributes(
-        yjit_enabled: 1,
-        yjit_code_region_size_bytes: 1024,
-        yjit_alloc_size_bytes: 2048,
-        yjit_compilation_failure_total: 3,
-      )
+      expect(metric).to have_attributes(yjit_enabled: 1, yjit_memory_usage_bytes: 3072)
     end
 
-    it "reports disabled YJIT without fabricating memory or failure values" do
+    it "reports disabled YJIT without fabricating memory usage" do
       RubyVM::YJIT.stubs(:enabled?).returns(false)
       RubyVM::YJIT.stubs(:runtime_stats).returns(nil)
 
       metric = described_class.new(:web).collect
 
-      expect(metric).to have_attributes(
-        yjit_enabled: 0,
-        yjit_code_region_size_bytes: nil,
-        yjit_alloc_size_bytes: nil,
-        yjit_compilation_failure_total: nil,
-      )
+      expect(metric).to have_attributes(yjit_enabled: 0, yjit_memory_usage_bytes: nil)
       expect(metric.process_cpu_seconds_total).to be >= 0
     end
 
@@ -48,28 +36,16 @@ RSpec.describe DiscoursePrometheus::Reporter::Process do
 
       metric = described_class.new(:web).collect
 
-      expect(metric).to have_attributes(
-        yjit_enabled: 1,
-        yjit_code_region_size_bytes: 0,
-        yjit_alloc_size_bytes: nil,
-        yjit_compilation_failure_total: nil,
-      )
+      expect(metric).to have_attributes(yjit_enabled: 1, yjit_memory_usage_bytes: nil)
     end
 
     it "leaves YJIT metrics unset for Sidekiq processes" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns(
-        { code_region_size: 1024, yjit_alloc_size: 2048, compilation_failure: 3 },
-      )
+      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
 
       metric = described_class.new(:sidekiq).collect
 
-      expect(metric).to have_attributes(
-        yjit_enabled: nil,
-        yjit_code_region_size_bytes: nil,
-        yjit_alloc_size_bytes: nil,
-        yjit_compilation_failure_total: nil,
-      )
+      expect(metric).to have_attributes(yjit_enabled: nil, yjit_memory_usage_bytes: nil)
     end
   end
 

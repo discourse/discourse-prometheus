@@ -1,6 +1,27 @@
 # frozen_string_literal: true
 
 RSpec.describe DiscoursePrometheus::Reporter::Process do
+  describe "#collect" do
+    it "collects YJIT state and combined memory usage for all process types" do
+      RubyVM::YJIT.stubs(:enabled?).returns(true)
+      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
+
+      %i[web sidekiq].each do |type|
+        metric = described_class.new(type).collect
+
+        expect(metric).to have_attributes(yjit_enabled: 1, yjit_memory_usage_bytes: 3072)
+      end
+    end
+
+    it "reports disabled YJIT without fabricating memory usage" do
+      RubyVM::YJIT.stubs(:enabled?).returns(false)
+
+      metric = described_class.new(:web).collect
+
+      expect(metric).to have_attributes(yjit_enabled: 0, yjit_memory_usage_bytes: nil)
+    end
+  end
+
   it "collects gc stats" do
     ctx = MiniRacer::Context.new
     ctx.eval("")

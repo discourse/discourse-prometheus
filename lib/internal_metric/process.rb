@@ -3,6 +3,8 @@
 module DiscoursePrometheus::InternalMetric
   class Process < Base
     GAUGES = {
+      yjit_enabled: "Whether YJIT is enabled in the process (1 enabled, 0 disabled)",
+      yjit_memory_usage_bytes: "Combined YJIT code region and Rust heap memory usage in bytes",
       heap_free_slots: "Free ruby heap slots",
       heap_live_slots: "Used ruby heap slots",
       v8_heap_size: "Total JavaScript V8 heap size (bytes)",
@@ -28,6 +30,8 @@ module DiscoursePrometheus::InternalMetric
     }
 
     attribute :type,
+              :yjit_enabled,
+              :yjit_memory_usage_bytes,
               :gc_major_by,
               :heap_free_slots,
               :heap_live_slots,

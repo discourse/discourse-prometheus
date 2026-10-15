@@ -6,6 +6,45 @@ require_relative "../../lib/collector"
 RSpec.describe DiscoursePrometheus::Collector do
   subject(:collector) { described_class.new }
 
+  describe "#prometheus_metrics_text" do
+    before do
+      @original_prefix = PrometheusExporter::Metric::Base.default_prefix
+      PrometheusExporter::Metric::Base.default_prefix = "discourse_"
+    end
+
+    after { PrometheusExporter::Metric::Base.default_prefix = @original_prefix }
+
+    it "exports combined YJIT memory usage with process type and pid labels" do
+      RubyVM::YJIT.stubs(:enabled?).returns(true)
+      RubyVM::YJIT.stubs(:runtime_stats).returns(
+        { code_region_size: 1024, yjit_alloc_size: 2048 },
+        { code_region_size: 4096, yjit_alloc_size: 8192 },
+      )
+      reporter = DiscoursePrometheus::Reporter::Process.new(:web)
+      first = reporter.collect
+      first.pid = 100
+      collector.process(first.to_json)
+      second = DiscoursePrometheus::Reporter::Process.new(:sidekiq).collect
+      second.pid = 200
+      collector.process(second.to_json)
+
+      text = collector.prometheus_metrics_text
+
+      expect(collector.prometheus_metrics.map(&:name).grep(/\Ayjit_/)).to contain_exactly(
+        "yjit_enabled",
+        "yjit_memory_usage_bytes",
+      )
+      expect(text).to include(
+        "# TYPE discourse_yjit_enabled gauge",
+        "# TYPE discourse_yjit_memory_usage_bytes gauge",
+        'discourse_yjit_enabled{type="web",pid="100"} 1',
+        'discourse_yjit_memory_usage_bytes{type="web",pid="100"} 3072',
+        'discourse_yjit_enabled{type="sidekiq",pid="200"} 1',
+        'discourse_yjit_memory_usage_bytes{type="sidekiq",pid="200"} 12288',
+      )
+    end
+  end
+
   it "processes custom metrics" do
     collector.process(<<~METRIC)
         {

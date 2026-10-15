@@ -30,6 +30,7 @@ module DiscoursePrometheus::Reporter
       metric = ::DiscoursePrometheus::InternalMetric::Process.new
       metric.type = @type
       collect_gc_stats(metric)
+      collect_yjit_stats(metric)
       collect_v8_stats(metric)
       collect_process_stats(metric)
       collect_scheduler_stats(metric)
@@ -151,6 +152,18 @@ module DiscoursePrometheus::Reporter
            RailsFailover::Redis::Handler.instance.respond_to?(:primaries_down_count)
         metric.redis_failover_count = RailsFailover::Redis::Handler.instance.primaries_down_count
       end
+    end
+
+    private
+
+    def collect_yjit_stats(metric)
+      metric.yjit_enabled = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled? ? 1 : 0
+      return if metric.yjit_enabled == 0
+
+      stats = RubyVM::YJIT.runtime_stats
+      return unless stats[:code_region_size] && stats[:yjit_alloc_size]
+
+      metric.yjit_memory_usage_bytes = stats[:code_region_size] + stats[:yjit_alloc_size]
     end
   end
 end

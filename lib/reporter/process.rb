@@ -30,7 +30,7 @@ module DiscoursePrometheus::Reporter
       metric = ::DiscoursePrometheus::InternalMetric::Process.new
       metric.type = @type
       collect_gc_stats(metric)
-      collect_yjit_stats(metric) if @type == "web"
+      collect_yjit_stats(metric)
       collect_v8_stats(metric)
       collect_process_stats(metric)
       collect_scheduler_stats(metric)

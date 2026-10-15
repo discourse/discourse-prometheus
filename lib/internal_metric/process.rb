@@ -3,7 +3,7 @@
 module DiscoursePrometheus::InternalMetric
   class Process < Base
     GAUGES = {
-      yjit_enabled: "Whether YJIT is enabled in the web worker (1 enabled, 0 disabled)",
+      yjit_enabled: "Whether YJIT is enabled in the process (1 enabled, 0 disabled)",
       yjit_memory_usage_bytes: "Combined YJIT code region and Rust heap memory usage in bytes",
       heap_free_slots: "Free ruby heap slots",
       heap_live_slots: "Used ruby heap slots",

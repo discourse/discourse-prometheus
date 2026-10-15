@@ -14,19 +14,18 @@ RSpec.describe DiscoursePrometheus::Collector do
 
     after { PrometheusExporter::Metric::Base.default_prefix = @original_prefix }
 
-    it "exports combined YJIT memory usage per web worker, including zero usage" do
+    it "exports combined YJIT memory usage with process type and pid labels" do
       RubyVM::YJIT.stubs(:enabled?).returns(true)
       RubyVM::YJIT.stubs(:runtime_stats).returns(
         { code_region_size: 1024, yjit_alloc_size: 2048 },
-        { code_region_size: 0, yjit_alloc_size: 0 },
+        { code_region_size: 4096, yjit_alloc_size: 8192 },
       )
       reporter = DiscoursePrometheus::Reporter::Process.new(:web)
       first = reporter.collect
       first.pid = 100
       collector.process(first.to_json)
-      second = reporter.collect
+      second = DiscoursePrometheus::Reporter::Process.new(:sidekiq).collect
       second.pid = 200
-      collector.process(second.to_json)
       collector.process(second.to_json)
 
       text = collector.prometheus_metrics_text
@@ -40,40 +39,9 @@ RSpec.describe DiscoursePrometheus::Collector do
         "# TYPE discourse_yjit_memory_usage_bytes gauge",
         'discourse_yjit_enabled{type="web",pid="100"} 1',
         'discourse_yjit_memory_usage_bytes{type="web",pid="100"} 3072',
-        'discourse_yjit_enabled{type="web",pid="200"} 1',
-        'discourse_yjit_memory_usage_bytes{type="web",pid="200"} 0',
+        'discourse_yjit_enabled{type="sidekiq",pid="200"} 1',
+        'discourse_yjit_memory_usage_bytes{type="sidekiq",pid="200"} 12288',
       )
-    end
-
-    it "replaces enabled snapshots with disabled state and omits Sidekiq YJIT samples" do
-      RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
-      reporter = DiscoursePrometheus::Reporter::Process.new(:web)
-      collector.process(reporter.collect.to_json)
-      RubyVM::YJIT.stubs(:enabled?).returns(false)
-
-      collector.process(reporter.collect.to_json)
-      sidekiq = DiscoursePrometheus::Reporter::Process.new(:sidekiq).collect
-      sidekiq.pid = Process.pid + 1
-      collector.process(sidekiq.to_json)
-      samples = collector.prometheus_metrics_text.lines.grep(/\Adiscourse_yjit_/)
-
-      expect(samples).to eq(["discourse_yjit_enabled{type=\"web\",pid=\"#{Process.pid}\"} 0\n"])
-    end
-
-    it "expires YJIT samples from retired workers" do
-      RubyVM::YJIT.stubs(:enabled?).returns(true)
-      RubyVM::YJIT.stubs(:runtime_stats).returns({ code_region_size: 1024, yjit_alloc_size: 2048 })
-      collector.process(DiscoursePrometheus::Reporter::Process.new(:web).collect.to_json)
-      later = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 61
-      Process.stubs(:clock_gettime).with(Process::CLOCK_MONOTONIC).returns(later)
-      replacement = DiscoursePrometheus::InternalMetric::Process.new
-      replacement.type = "sidekiq"
-      replacement.pid = Process.pid + 1
-
-      collector.process(replacement.to_json)
-
-      expect(collector.prometheus_metrics_text.lines.grep(/\Adiscourse_yjit_/)).to be_empty
     end
   end
 

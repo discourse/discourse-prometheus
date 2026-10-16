@@ -66,7 +66,7 @@ module DiscoursePrometheus
         Net::HTTP.get(URI("http://localhost:#{GlobalSetting.prometheus_collector_port}/metrics"))
       [
         200,
-        { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => data.bytesize.to_s },
+        { "content-type" => "text/plain; charset=utf-8", "content-length" => data.bytesize.to_s },
         [data],
       ]
     end

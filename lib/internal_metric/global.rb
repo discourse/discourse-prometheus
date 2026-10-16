@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "raindrops"
+require_relative "../listener_stats"
 require "sidekiq/api"
 require "open3"
 
@@ -110,9 +110,9 @@ module DiscoursePrometheus::InternalMetric
 
       if RbConfig::CONFIG["arch"] !~ /darwin/
         if listener = ENV["UNICORN_LISTENER"]
-          net_stats = Raindrops::Linux.unix_listener_stats([listener])[listener]
+          net_stats = DiscoursePrometheus::ListenerStats.unix(listener)
         else
-          net_stats = Raindrops::Linux.tcp_listener_stats("0.0.0.0:3000")["0.0.0.0:3000"]
+          net_stats = DiscoursePrometheus::ListenerStats.tcp(3000)
         end
       end
 

@@ -6,6 +6,41 @@ RSpec.describe DiscoursePrometheus::InternalMetric::Global do
 
   after { metric.reset! }
 
+  describe "#collect" do
+    it "exports peak socket counts across collections" do
+      Dir.mktmpdir do |directory|
+        previous_listener = ENV["UNICORN_LISTENER"]
+        path = File.join(directory, "app")
+        ENV["UNICORN_LISTENER"] = path
+        server = UNIXServer.new(path)
+        clients = Array.new(2) { UNIXSocket.new(path) }
+        accepted = []
+
+        metric.collect
+        expect([metric.active_app_reqs, metric.queued_app_reqs]).to eq([0, 2])
+
+        accepted << server.accept
+        accepted << server.accept
+        metric.collect
+        expect([metric.active_app_reqs, metric.queued_app_reqs]).to eq([2, 2])
+
+        payload = metric.to_h
+        expect(payload.slice(:active_app_reqs, :queued_app_reqs)).to eq(
+          active_app_reqs: 2,
+          queued_app_reqs: 2,
+        )
+
+        metric.collect
+        expect([metric.active_app_reqs, metric.queued_app_reqs]).to eq([2, 2])
+      ensure
+        ENV["UNICORN_LISTENER"] = previous_listener
+        accepted&.each(&:close)
+        clients&.each(&:close)
+        server&.close
+      end
+    end
+  end
+
   it "collects global metrics" do
     Landlock.stubs(:abi_version).returns(6)
 
